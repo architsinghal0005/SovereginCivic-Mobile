@@ -1,0 +1,28 @@
+{
+  "name": "sovereign-civic-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/architsinghal0005/SovereginCivic-Mobile.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/architsinghal0005/SovereginCivic-Mobile/issues"
+  },
+  "homepage": "https://github.com/architsinghal0005/SovereginCivic-Mobile#readme",
+  "dependencies": {
+    "axios": "^1.18.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "neo4j-driver": "^6.1.0"
+  }
+}
