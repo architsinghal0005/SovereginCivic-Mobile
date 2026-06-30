@@ -1,0 +1,9 @@
+{
+    "citizenId": "c_123",
+    "grievanceId": "g_999",
+    "category": "road_damage",
+    "description": "Large pothole in the center of the lane",
+    "lat": 26.4499,
+    "lng": 74.6399,
+    "imageUrl": "https://example.com/pothole.jpg"
+}
