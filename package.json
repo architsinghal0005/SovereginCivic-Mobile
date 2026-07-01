@@ -1,6 +1,7 @@
 {
   "name": "namespace",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.ts",
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
