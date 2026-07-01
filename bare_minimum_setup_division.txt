@@ -1,0 +1,44 @@
+# Remote Bare Minimum Setup: Task Division
+
+Since your team is distributed across different cities, local IP addresses (`http://192.168.x.x`) won't work for connecting the services. To prove the app works and allow everyone to collaborate remotely, you must either expose your local servers to the internet using **ngrok** or rely on shared cloud instances from day one.
+
+Divide these setup tasks so everyone can boot their piece of the architecture and connect to each other remotely:
+
+## 👤 Person 1: Mobile App Bootstrapper
+**Workspace:** `/mobile`
+**Goal:** Get the Expo app running on a physical device and talking to the remote API.
+**Tasks:**
+1. Navigate to `/mobile` and run `npm install`.
+2. Wait for Person 2 to provide their public `ngrok` URL (or deployed Render URL).
+3. Update `.env` with `EXPO_PUBLIC_BACKEND_URL=<PERSON_2_NGROK_URL>`.
+4. Run `npm start` (or `npx expo start`) and scan the QR code using Expo Go.
+5. Add a simple button that fetches the `/health` endpoint from Person 2's remote URL to prove the internet connection works across cities.
+
+## 👤 Person 2: Gateway Server Bootstrapper
+**Workspace:** `/gateway-service`
+**Goal:** Get the Express API running and expose it securely to the internet.
+**Tasks:**
+1. Navigate to `/gateway-service` and run `npm install`.
+2. Run `npm run dev` to start the server locally on port 3000.
+3. **Remote Setup:** Install [ngrok](https://ngrok.com/) (e.g., `npm i -g ngrok`). Run `ngrok http 3000` to generate a public HTTPS URL for your localhost.
+4. Share that `https://<random>.ngrok-free.app` URL with Person 1.
+5. Wait for Person 3 to provide the public URL for the Graph Service, and set it in your `.env` as `GRAPH_SERVICE_URL`.
+
+## 👤 Person 3: Graph Database Bootstrapper
+**Workspace:** `/graph-service`
+**Goal:** Get the Neo4j connection established on a shared cloud instance.
+**Tasks:**
+1. Create a **free cloud Neo4j AuraDB instance**. (Do not run this locally; the whole team needs access).
+2. Share the `NEO4J_URI`, `NEO4J_USERNAME`, and `NEO4J_PASSWORD` with the team so anyone can view the graph dashboard.
+3. Navigate to `/graph-service`, run `npm install`, add the cloud credentials to your `.env`, and run `npm start`.
+4. **Remote Setup:** Run `ngrok http 4000` (assuming it runs on port 4000) and share this URL with Person 2 so the Gateway can send requests to it.
+
+## 👤 Person 4: Queue/Worker Bootstrapper
+**Workspace:** `/caseworker-engine`
+**Goal:** Get the worker engine listening to a shared cloud Redis instance.
+**Tasks:**
+1. Create a **free cloud Redis instance** using [Upstash](https://upstash.com/) or Render. (Do not run this locally; Person 3's webhook might need to reach it, or you might share the queue).
+2. Grab the public `REDIS_URL` and share it with the team.
+3. Navigate to `/caseworker-engine`, run `npm install`, update your `.env` with the cloud `REDIS_URL`.
+4. Run `npm run dev` and ensure the worker logs confirm it has successfully connected to the remote Upstash Redis instance.
+5. Provide a webhook URL (via `ngrok`) to Person 3 if the graph service needs to trigger workflows directly.
