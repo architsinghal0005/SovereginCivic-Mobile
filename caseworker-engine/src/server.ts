@@ -41,6 +41,13 @@ app.post('/api/workflow/trigger-caseworker', async (req: Request, res: Response)
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Web Service Server listening on port ${PORT}`);
-});
+
+export function startServer() {
+  return app.listen(PORT, () => {
+    console.log(`Web Service Server listening on port ${PORT}`);
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
