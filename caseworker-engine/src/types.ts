@@ -3,10 +3,11 @@ export type TicketState = 'CLUSTER_DETECTED' | 'ASSIGNED_TO_OFFICER' | 'IN_PROGR
 export interface Ticket {
   id: string;
   clusterId: string;
-  description: string;
-  initialOfficerId: string;
-  supervisorId: string;
-  assignedOfficerId: string;
+  clusterSize: number;
+  description?: string;
+  initialOfficerId?: string;
+  supervisorId?: string;
+  assignedOfficerId?: string;
   state: TicketState;
   isEscalated: boolean;
   createdAt: Date;

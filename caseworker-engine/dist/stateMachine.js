@@ -76,18 +76,15 @@ class StateMachineEngine {
         }
         return ticket;
     }
-    static async initializeTicket(clusterId, description, initialOfficerId, supervisorId) {
+    static async initializeTicket(clusterId, clusterSize, timestamp) {
         const ticketId = `TICKET-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const newTicket = {
             id: ticketId,
             clusterId,
-            description,
-            initialOfficerId,
-            supervisorId,
-            assignedOfficerId: initialOfficerId,
+            clusterSize,
             state: 'CLUSTER_DETECTED',
             isEscalated: false,
-            createdAt: new Date(),
+            createdAt: new Date(timestamp),
             updatedAt: new Date()
         };
         await exports.repository.save(newTicket);

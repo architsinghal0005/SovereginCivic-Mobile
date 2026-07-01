@@ -96,18 +96,15 @@ export class StateMachineEngine {
     return ticket;
   }
 
-  static async initializeTicket(clusterId: string, description: string, initialOfficerId: string, supervisorId: string): Promise<Ticket> {
+  static async initializeTicket(clusterId: string, clusterSize: number, timestamp: string): Promise<Ticket> {
     const ticketId = `TICKET-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const newTicket: Ticket = {
       id: ticketId,
       clusterId,
-      description,
-      initialOfficerId,
-      supervisorId,
-      assignedOfficerId: initialOfficerId,
+      clusterSize,
       state: 'CLUSTER_DETECTED',
       isEscalated: false,
-      createdAt: new Date(),
+      createdAt: new Date(timestamp),
       updatedAt: new Date()
     };
 
