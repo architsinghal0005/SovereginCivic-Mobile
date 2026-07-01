@@ -1,0 +1,23 @@
+{
+  "name": "caseworker-engine",
+  "version": "1.0.0",
+  "description": "Caseworker Engine for SovereignCivic",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "worker": "node dist/queue.js",
+    "dev": "ts-node src/server.ts"
+  },
+  "dependencies": {
+    "bullmq": "^5.0.0",
+    "express": "^4.19.2",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
