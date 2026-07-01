@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "start:combined": "node dist/index.js",
+    "start:combined": "node dist/server.js & node dist/queue.js",
     "worker": "node dist/queue.js",
     "dev": "ts-node src/server.ts"
   },
