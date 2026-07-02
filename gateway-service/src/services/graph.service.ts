@@ -3,13 +3,12 @@ import { logger } from '../utils/logger';
 
 export interface GraphForwardPayload {
   citizenId: string;
+  grievanceId: string;
   category: string;
   description: string;
   timestamp: string;
-  location: {
-    lat: number;
-    lng: number;
-  };
+  lat: number;
+  lng: number;
   imageUrl?: string;
 }
 

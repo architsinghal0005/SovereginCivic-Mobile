@@ -47,13 +47,12 @@ export const reportGrievance = async (req: Request, res: Response) => {
     // 5. Build Graph Payload
     const graphPayload: GraphForwardPayload = {
       citizenId,
+      grievanceId: `grv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       category: parsedData.category,
       description: parsedData.description,
       timestamp: new Date().toISOString(),
-      location: {
-        lat: latitude,
-        lng: longitude
-      },
+      lat: latitude,
+      lng: longitude,
       imageUrl: finalImageUrl
     };
 

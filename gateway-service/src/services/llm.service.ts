@@ -20,7 +20,7 @@ const ALLOWED_CATEGORIES = [
 export class LLMService {
   private readonly apiKey: string;
   private readonly apiUrl: string;
-  private readonly MAX_RETRIES = 3;
+  private readonly MAX_RETRIES = 1;
 
   constructor() {
     this.apiKey = process.env.LLM_API_KEY || '';
@@ -57,13 +57,17 @@ Format strictly as:
 }`;
 
     const payload = {
-      model: process.env.LLM_MODEL || 'gpt-3.5-turbo', // Fallback to an OpenAI default
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text }
+      contents: [
+        {
+          parts: [
+            { text: `${systemPrompt}\n\nUser grievance: ${text}` }
+          ]
+        }
       ],
-      temperature: 0.1, // Low temperature for deterministic formatting
-      response_format: { type: 'json_object' } // For APIs that strictly enforce JSON format
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json'
+      }
     };
 
     let attempt = 0;
@@ -71,16 +75,17 @@ Format strictly as:
 
     while (attempt < this.MAX_RETRIES) {
       try {
-        const response = await axios.post(this.apiUrl, payload, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`
-          },
-          timeout: 15000 // 15 seconds timeout
-        });
+        const response = await axios.post(
+          `${this.apiUrl}?key=${this.apiKey}`,
+          payload,
+          {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 15000
+          }
+        );
 
-        // Parse assuming standard OpenAI compatible JSON response shape
-        const content = response.data?.choices?.[0]?.message?.content;
+        // Parse Gemini native response shape
+        const content = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (!content) {
           throw new Error('Empty or malformed response from LLM');
