@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build and Cache
+.expo/
+android/
+ios/
+dist/
+build/
+
+# Environment
+.env
+*.log
+.DS_Store
