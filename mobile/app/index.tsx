@@ -15,13 +15,16 @@ import { useLocation } from '../hooks/useLocation';
 import { useCamera } from '../hooks/useCamera';
 import { submitGrievanceReport } from '../services/api';
 import { useToast } from '../hooks/useToast';
+import { useTicketPolling } from '../hooks/useTicketPolling';
 
 export default function HomeScreen() {
   const [gpsStatus, setGpsStatus] = React.useState<GPSStatus>('searching');
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = React.useState<string | null>(null);
+  const [reportId, setReportId] = React.useState<string | null>(null);
   
   const { showToast } = useToast();
+  const { status: ticketStatus } = useTicketPolling(reportId);
 
   const {
     isRecording,
@@ -85,6 +88,7 @@ export default function HomeScreen() {
 
   const handleReset = () => {
     setSubmitSuccess(null);
+    setReportId(null);
     resetAudio();
     removePhoto();
     // GPS and permissions remain acquired for next report
@@ -108,6 +112,9 @@ export default function HomeScreen() {
       });
       
       setSubmitSuccess('Report submitted successfully! Thank you for your civic contribution.');
+      if (response.reportId) {
+        setReportId(response.reportId);
+      }
     } catch (err: any) {
       showToast(err.message || 'An unexpected error occurred.', 'error');
     } finally {
@@ -121,6 +128,16 @@ export default function HomeScreen() {
         <View style={styles.successContainer}>
           <Text style={styles.successTitle}>Success</Text>
           <Text style={styles.successMessage}>{submitSuccess}</Text>
+          
+          {reportId && (
+            <View style={{ marginBottom: SIZES.xl, alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textSecondary, marginBottom: 4 }}>Live Ticket Status:</Text>
+              <View style={{ backgroundColor: COLORS.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+                <Text style={{ color: COLORS.surface, fontWeight: 'bold' }}>{ticketStatus}</Text>
+              </View>
+            </View>
+          )}
+
           <PrimaryButton title="Start New Report" onPress={handleReset} />
         </View>
       </SafeAreaView>
