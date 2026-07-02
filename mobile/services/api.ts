@@ -14,6 +14,17 @@ export interface GrievanceReportResponse {
   reportId?: string;
 }
 
+export interface Grievance {
+  id: string;
+  category: string;
+  description: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | string;
+  createdAt: string | null;
+  imageUrl?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}
+
 const TIMEOUT_MS = 15000;
 
 export const submitGrievanceReport = async (
@@ -84,5 +95,34 @@ export const submitGrievanceReport = async (
     }
     
     throw new Error(error.message || 'An unexpected error occurred during submission.');
+  }
+};
+
+export const fetchMyReports = async (citizenId: string): Promise<Grievance[]> => {
+  const url = `${CONFIG.BACKEND_URL}/api/grievance/history/${citizenId}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server Error (${response.status}): ${errorText || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.grievances as Grievance[];
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your network connection.');
+    }
+    throw new Error(error.message || 'Failed to fetch reports.');
   }
 };

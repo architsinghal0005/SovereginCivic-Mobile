@@ -58,6 +58,44 @@ app.post("/api/graph/ingest", async (req, res) => {
             }
         }
         res.status(201).json({ message: "Grievance ingested successfully" });
+
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    } finally {
+        await session.close();
+    }
+});
+
+app.get("/api/graph/citizen/:citizenId/grievances", async (req, res) => {
+    const { citizenId } = req.params;
+    const session = getSession();
+    const cypher = `
+        MATCH (c:Citizen {id: $citizenId})-[:FILED]->(g:Grievance)
+        RETURN g.id AS id,
+               g.category AS category,
+               g.description AS description,
+               g.status AS status,
+               g.createdAt AS createdAt,
+               g.imageUrl AS imageUrl,
+               g.point.latitude AS lat,
+               g.point.longitude AS lng
+        ORDER BY g.createdAt DESC
+    `;
+    try {
+        const result = await session.executeRead(tx =>
+            tx.run(cypher, { citizenId })
+        );
+        const grievances = result.records.map(r => ({
+            id: r.get("id"),
+            category: r.get("category"),
+            description: r.get("description"),
+            status: r.get("status"),
+            createdAt: r.get("createdAt")?.toString() ?? null,
+            imageUrl: r.get("imageUrl"),
+            lat: r.get("lat"),
+            lng: r.get("lng"),
+        }));
+        res.status(200).json({ grievances });
     } catch (e) {
         res.status(500).json({ error: e.message });
     } finally {
@@ -68,6 +106,7 @@ app.post("/api/graph/ingest", async (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
     console.log(`🚀 SovereignCivic server running on port ${process.env.PORT || 3000}`);
 });
+
 
 process.on('SIGINT', async () => {
     await driver.close();

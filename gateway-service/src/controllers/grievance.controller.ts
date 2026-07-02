@@ -84,3 +84,21 @@ export const reportGrievance = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getGrievanceHistory = async (req: Request, res: Response) => {
+  const { citizenId } = req.params;
+  if (!citizenId) {
+    return res.status(400).json({ success: false, error: 'citizenId is required' });
+  }
+
+  try {
+    const axios = (await import('axios')).default;
+    const graphUrl = `${(process.env.GRAPH_SERVICE_URL || 'http://localhost:4000').replace(/\/$/, '')}/api/graph/citizen/${citizenId}/grievances`;
+    const response = await axios.get(graphUrl, { timeout: 10000 });
+    return res.status(200).json({ success: true, grievances: response.data.grievances });
+  } catch (error: any) {
+    const status = error.response?.status || 500;
+    logger.error('Failed to fetch grievance history', { citizenId, error: error.message });
+    return res.status(status).json({ success: false, error: 'Failed to fetch history from graph-service' });
+  }
+};

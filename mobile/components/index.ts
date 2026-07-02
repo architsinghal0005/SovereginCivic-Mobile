@@ -7,3 +7,4 @@ export * from './PermissionWarningCard';
 export * from './LoadingIndicator';
 export * from './Toast';
 export * from './ErrorBoundary';
+export * from './ReportCard';
