@@ -18,7 +18,6 @@ export class GraphService {
 
   constructor() {
     this.baseUrl = process.env.GRAPH_SERVICE_URL || 'http://localhost:4000';
-    
     if (!process.env.GRAPH_SERVICE_URL) {
       logger.warn('GRAPH_SERVICE_URL is not defined in environment variables, falling back to http://localhost:4000');
     }

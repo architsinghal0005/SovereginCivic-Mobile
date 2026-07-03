@@ -25,23 +25,30 @@ export interface Grievance {
   lng?: number | null;
 }
 
-const TIMEOUT_MS = 15000;
+const TIMEOUT_MS = 60000;
 
 export const submitGrievanceReport = async (
   payload: GrievanceReportPayload
 ): Promise<GrievanceReportResponse> => {
-  const url = `${CONFIG.BACKEND_URL}/api/grievance/report`;
-  
+ const url = `${CONFIG.BACKEND_URL}/api/grievance/report`;
+// Open mobile/api.ts and change this line:
+
+// To this (to match your gateway route):
+// const url = "https://rope-bleep-obstinate.ngrok-free.dev/api/grievance/report";
   const formData = new FormData();
   
-  // Attach dummy citizenId
   formData.append('citizenId', payload.citizenId || 'dummy-citizen-123');
+formData.append('grievanceId', 'unique-id-123'); 
+formData.append('category', 'General');         
+formData.append('description', 'Voice report'); 
+const latitudeValue = typeof payload.latitude === 'number' && !isNaN(payload.latitude) ? payload.latitude : 0;
+  const longitudeValue = typeof payload.longitude === 'number' && !isNaN(payload.longitude) ? payload.longitude : 0;
+  formData.append('lat', latitudeValue.toString());
+  formData.append('lng', longitudeValue.toString());
+  formData.append('latitude', latitudeValue.toString());
+  formData.append('longitude', longitudeValue.toString());
+formData.append('imageUrl', payload.imageUri || '');
   
-  // Attach coordinates
-  formData.append('latitude', payload.latitude.toString());
-  formData.append('longitude', payload.longitude.toString());
-  
-  // Attach audio file
   const audioFilename = payload.audioUri.split('/').pop() || 'recording.m4a';
   formData.append('audio', {
     uri: payload.audioUri,
@@ -49,7 +56,6 @@ export const submitGrievanceReport = async (
     type: 'audio/m4a',
   } as any);
   
-  // Attach image file if present
   if (payload.imageUri) {
     const imageFilename = payload.imageUri.split('/').pop() || 'photo.jpg';
     formData.append('image', {
@@ -68,7 +74,7 @@ export const submitGrievanceReport = async (
       body: formData,
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'multipart/form-data',
+        'ngrok-skip-browser-warning': 'true',
       },
       signal: controller.signal,
     });
