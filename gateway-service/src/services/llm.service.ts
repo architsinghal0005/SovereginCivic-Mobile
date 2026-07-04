@@ -1,30 +1,30 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { z } from 'zod';
 import { logger } from '../utils/logger';
 
-export interface ParsedGrievance {
-  category: string;
-  description: string;
-}
+export const ParsedGrievanceSchema = z.object({
+  category: z.enum([
+    'Road Infrastructure',
+    'Water Supply',
+    'Sewage Management',
+    'Garbage',
+    'Street Lighting',
+    'Electricity',
+    'Public Safety',
+    'Other'
+  ]),
+  description: z.string().min(1)
+});
 
-const ALLOWED_CATEGORIES = [
-  'Road Infrastructure',
-  'Water Supply',
-  'Sewage Management',
-  'Garbage',
-  'Street Lighting',
-  'Electricity',
-  'Public Safety',
-  'Other'
-];
+export type ParsedGrievance = z.infer<typeof ParsedGrievanceSchema>;
 
 export class LLMService {
   private readonly apiKey: string;
   private readonly apiUrl: string;
-  private readonly MAX_RETRIES = 1;
+  private readonly MAX_RETRIES = 3;
 
   constructor() {
     this.apiKey = process.env.LLM_API_KEY || '';
-    // Assumes an OpenAI-compatible /chat/completions REST endpoint by default
     this.apiUrl = process.env.LLM_API_URL || 'https://api.openai.com/v1/chat/completions';
 
     if (!this.apiKey) {
@@ -36,8 +36,8 @@ export class LLMService {
    * Parses natural language grievance text, classifies it, and rewrites a formal summary.
    */
   public async parseGrievance(text: string): Promise<ParsedGrievance> {
-    const systemPrompt = `You are a semantic parsing assistant.
-Your task is to classify a citizen's grievance into exactly one of the allowed categories, and rewrite the grievance into a clean, formal English summary.
+    const systemPrompt = `You are a semantic parsing assistant for a civic grievance system.
+Your task is to classify a citizen's grievance into exactly one of the allowed categories, and rewrite the grievance into a clear, professional, and formal English summary.
 
 Allowed categories:
 - Road Infrastructure
@@ -49,7 +49,11 @@ Allowed categories:
 - Public Safety
 - Other
 
-Output STRICT JSON ONLY. Do not use markdown blocks like \`\`\`json.
+Rules:
+1. You MUST output ONLY valid JSON.
+2. Do not use markdown blocks like \`\`\`json.
+3. If the user's grievance is vague or incomprehensible, default the category to "Other" and provide a sensible description.
+
 Format strictly as:
 {
   "category": "String (one of the allowed categories)",
@@ -91,23 +95,27 @@ Format strictly as:
           throw new Error('Empty or malformed response from LLM');
         }
 
-        // Validate JSON and schema
         return this.parseAndValidateJSON(content, text);
 
-      } catch (error) {
+      } catch (error: any) {
         attempt++;
+        const axiosError = error as AxiosError;
+        
+        const isRateLimit = axiosError.response?.status === 429;
         
         if (attempt >= this.MAX_RETRIES) {
-          logger.error('LLM parsing failed after max retries, applying fallback', { error: (error as Error).message });
-          // Fallback strategy: return Other and the original text
+          logger.error('LLM parsing failed after max retries, applying fallback', { error: error.message });
           return {
             category: 'Other',
             description: text
           };
         }
 
-        logger.warn(`LLM API attempt ${attempt} failed. Retrying in ${delayMs}ms...`, { error: (error as Error).message });
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        // If 429, wait longer
+        const waitTime = isRateLimit ? delayMs * 2 : delayMs;
+        logger.warn(`LLM API attempt ${attempt} failed (Status: ${axiosError.response?.status || 'Unknown'}). Retrying in ${waitTime}ms...`, { error: error.message });
+        
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
         delayMs *= 2; // Exponential backoff
       }
     }
@@ -117,7 +125,7 @@ Format strictly as:
   }
 
   /**
-   * Defensively parses JSON from LLM string output and validates category constraints
+   * Defensively parses JSON from LLM string output and validates using Zod
    */
   private parseAndValidateJSON(content: string, originalText: string): ParsedGrievance {
     try {
@@ -129,14 +137,24 @@ Format strictly as:
         cleaned = cleaned.replace(/^```/, '').replace(/```$/, '').trim();
       }
 
-      // 2. Parse the strict JSON
+      // 2. Parse the JSON
       const parsed = JSON.parse(cleaned);
       
+      // 3. Validate with Zod
+      const result = ParsedGrievanceSchema.safeParse(parsed);
+      
+      if (result.success) {
+        return result.data;
+      }
+      
+      logger.warn('LLM JSON output failed Zod validation, falling back to safe parsing', { errors: result.error.errors });
+
+      // 4. Fallback invalid categories or missing fields cleanly instead of throwing
       let category = parsed.category;
       let description = parsed.description;
 
-      // 3. Fallback invalid categories or missing fields cleanly instead of throwing
-      if (!category || typeof category !== 'string' || !ALLOWED_CATEGORIES.includes(category)) {
+      const allowed = ['Road Infrastructure', 'Water Supply', 'Sewage Management', 'Garbage', 'Street Lighting', 'Electricity', 'Public Safety', 'Other'];
+      if (!category || typeof category !== 'string' || !allowed.includes(category)) {
         category = 'Other';
       }
 
@@ -144,7 +162,7 @@ Format strictly as:
         description = originalText;
       }
 
-      return { category, description };
+      return { category: category as ParsedGrievance['category'], description };
 
     } catch (e) {
       // Throw so the retry block catches it and tries again

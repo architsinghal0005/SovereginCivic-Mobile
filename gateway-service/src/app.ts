@@ -1,6 +1,9 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { grievanceRouter } from './routes/grievance.routes';
+import { notifyRouter, notificationsRouter } from './routes/notify.routes';
+import { officerRouter } from './routes/officer.routes';
+import { dashboardRouter } from './routes/dashboard.routes';
 import { logger } from './utils/logger';
 import { errorConverter, errorHandler } from './middleware/error.middleware';
 
@@ -26,8 +29,12 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Mount Grievance Routes
+// Mount Routes
 app.use('/api/grievance', grievanceRouter);
+app.use('/api/notify', notifyRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/officer', officerRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // Convert all loose errors to standardized ApiError
 app.use(errorConverter);
