@@ -28,6 +28,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: COLORS.error,
     marginVertical: SIZES.sm,
+    minHeight: SIZES.touchTarget,
   },
   text: {
     marginLeft: SIZES.sm,

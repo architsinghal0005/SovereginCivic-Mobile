@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Platform, StatusBar } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
 import { 
   PrimaryButton, 
@@ -126,6 +127,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', padding: SIZES.lg }]}>
         <View style={styles.successContainer}>
+          <MaterialCommunityIcons name="check-circle" size={64} color={COLORS.success} style={{ marginBottom: SIZES.sm }} />
           <Text style={styles.successTitle}>Success</Text>
           <Text style={styles.successMessage}>{submitSuccess}</Text>
           
@@ -275,12 +277,12 @@ const styles = StyleSheet.create({
   successContainer: {
     backgroundColor: COLORS.surface,
     padding: SIZES.xl,
-    borderRadius: SIZES.md,
+    borderRadius: SIZES.radius,
     alignItems: 'center',
     shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
   successTitle: {

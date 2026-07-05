@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Grievance } from '../services/api';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 
@@ -39,14 +39,22 @@ function getRelativeTime(isoString: string | null): string {
 
 interface ReportCardProps {
   report: Grievance;
+  onPress?: () => void;
 }
 
-export const ReportCard: React.FC<ReportCardProps> = ({ report }) => {
+export const ReportCard: React.FC<ReportCardProps> = ({ report, onPress }) => {
   const categoryColor = CATEGORY_COLORS[report.category] ?? CATEGORY_COLORS['Other'];
   const statusConfig = STATUS_CONFIG[report.status] ?? { color: '#64748B', bg: '#F1F5F9', label: report.status };
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={onPress} 
+      disabled={!onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Report for ${report.category}. Status: ${statusConfig.label}`}
+    >
       {/* Top row: category badge + time */}
       <View style={styles.topRow}>
         <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
@@ -74,7 +82,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report }) => {
           </Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -83,8 +91,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: SIZES.radius,
     padding: SIZES.md,
-    marginBottom: SIZES.sm,
-    ...SHADOWS.medium,
+    marginBottom: SIZES.md,
+    ...SHADOWS.small,
   },
   topRow: {
     flexDirection: 'row',
@@ -108,10 +116,10 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   description: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.text,
-    lineHeight: 20,
-    marginBottom: SIZES.sm,
+    lineHeight: 24,
+    marginBottom: SIZES.md,
   },
   bottomRow: {
     flexDirection: 'row',

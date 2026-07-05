@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import HomeScreen from './app/index';
 import MyReportsScreen from './app/reports';
+import NotificationScreen from './app/notifications';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './hooks/useToast';
 import { ToastContainer } from './components/Toast';
 import { COLORS, SIZES, SHADOWS } from './constants/theme';
 
-type Tab = 'home' | 'reports';
+type Tab = 'home' | 'reports' | 'notifications';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
@@ -20,8 +21,10 @@ export default function App() {
           <View style={styles.content}>
             {activeTab === 'home' ? (
               <HomeScreen />
-            ) : (
+            ) : activeTab === 'reports' ? (
               <MyReportsScreen onBack={() => setActiveTab('home')} />
+            ) : (
+              <NotificationScreen />
             )}
           </View>
 
@@ -47,6 +50,17 @@ export default function App() {
                 <Text style={[styles.tabIcon, activeTab === 'reports' && styles.tabIconActive]}>📋</Text>
                 <Text style={[styles.tabLabel, activeTab === 'reports' && styles.tabLabelActive]}>
                   My Reports
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => setActiveTab('notifications')}
+                accessibilityLabel="Notifications tab"
+              >
+                <Text style={[styles.tabIcon, activeTab === 'notifications' && styles.tabIconActive]}>🔔</Text>
+                <Text style={[styles.tabLabel, activeTab === 'notifications' && styles.tabLabelActive]}>
+                  Alerts
                 </Text>
               </TouchableOpacity>
             </View>

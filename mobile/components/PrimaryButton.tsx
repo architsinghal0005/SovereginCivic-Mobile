@@ -28,7 +28,7 @@ export const PrimaryButton = React.memo<PrimaryButtonProps>(({
       ]}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading }}
     >

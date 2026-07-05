@@ -21,8 +21,10 @@ export interface Grievance {
   status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | string;
   createdAt: string | null;
   imageUrl?: string | null;
+  audioUrl?: string | null;
   lat?: number | null;
   lng?: number | null;
+  citizenId?: string | null;
 }
 
 const TIMEOUT_MS = 60000;
@@ -104,10 +106,14 @@ formData.append('imageUrl', payload.imageUri || '');
   }
 };
 
-export const fetchMyReports = async (citizenId: string): Promise<Grievance[]> => {
+export const fetchMyReports = async (citizenId: string, customSignal?: AbortSignal): Promise<Grievance[]> => {
   const url = `${CONFIG.BACKEND_URL}/api/grievance/history/${citizenId}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  if (customSignal) {
+    customSignal.addEventListener('abort', () => controller.abort());
+  }
 
   try {
     const response = await fetch(url, {
@@ -130,5 +136,42 @@ export const fetchMyReports = async (citizenId: string): Promise<Grievance[]> =>
       throw new Error('Request timed out. Please check your network connection.');
     }
     throw new Error(error.message || 'Failed to fetch reports.');
+  }
+};
+
+export interface AppNotification {
+  ticketId: string;
+  newState: string;
+  message: string;
+  timestamp: string;
+  read?: boolean;
+}
+
+export const fetchNotifications = async (citizenId: string): Promise<AppNotification[]> => {
+  const url = `${CONFIG.BACKEND_URL}/api/notifications/${citizenId}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server Error (${response.status}): ${errorText || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.notifications as AppNotification[];
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your network connection.');
+    }
+    throw new Error(error.message || 'Failed to fetch notifications.');
   }
 };

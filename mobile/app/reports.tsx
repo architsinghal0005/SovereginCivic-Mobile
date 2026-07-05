@@ -1,11 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   ActivityIndicator, TouchableOpacity, Platform, StatusBar, RefreshControl,
 } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ReportCard } from '../components/ReportCard';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useMyReports } from '../hooks/useMyReports';
+import ComplaintDetailsScreen from './ComplaintDetailsScreen';
+import { Grievance } from '../services/api';
 
 const CITIZEN_ID = 'dummy-citizen-123'; // matches what the submit form sends
 
@@ -14,7 +17,8 @@ interface MyReportsScreenProps {
 }
 
 export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
-  const { reports, loading, error, refresh } = useMyReports(CITIZEN_ID);
+  const { reports, loading, isRefreshing, error, refresh } = useMyReports(CITIZEN_ID);
+  const [selectedReport, setSelectedReport] = useState<Grievance | null>(null);
 
   useEffect(() => {
     refresh();
@@ -33,6 +37,10 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
     );
   };
 
+  if (selectedReport) {
+    return <ComplaintDetailsScreen report={selectedReport} onBack={() => setSelectedReport(null)} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
@@ -44,8 +52,12 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
           <Text style={styles.headerTitle}>My Reports</Text>
           <Text style={styles.headerSubtitle}>{reports.length} grievance{reports.length !== 1 ? 's' : ''} filed</Text>
         </View>
-        <TouchableOpacity onPress={refresh} style={styles.refreshButton} disabled={loading}>
-          <Text style={[styles.refreshIcon, loading && { opacity: 0.4 }]}>↻</Text>
+        <TouchableOpacity onPress={refresh} style={styles.refreshButton} disabled={loading || isRefreshing}>
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          ) : (
+            <Text style={[styles.refreshIcon, (loading || isRefreshing) && { opacity: 0.4 }]}>↻</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -61,9 +73,21 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
 
       {/* Loading State */}
       {loading && reports.length === 0 && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Fetching your reports…</Text>
+        <View style={styles.listContent}>
+          {[1, 2, 3].map((key) => (
+            <View key={key} style={styles.skeletonCard}>
+              <View style={styles.skeletonTopRow}>
+                <SkeletonLoader style={styles.skeletonBadge} />
+                <SkeletonLoader style={styles.skeletonTime} />
+              </View>
+              <SkeletonLoader style={styles.skeletonDesc1} />
+              <SkeletonLoader style={styles.skeletonDesc2} />
+              <View style={styles.skeletonBottomRow}>
+                <SkeletonLoader style={styles.skeletonStatus} />
+                <SkeletonLoader style={styles.skeletonCoords} />
+              </View>
+            </View>
+          ))}
         </View>
       )}
 
@@ -71,7 +95,7 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
       <FlatList
         data={reports}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ReportCard report={item} />}
+        renderItem={({ item }) => <ReportCard report={item} onPress={() => setSelectedReport(item)} />}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -145,6 +169,28 @@ const styles = StyleSheet.create({
     padding: SIZES.md,
     flexGrow: 1,
   },
+  skeletonCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SIZES.radius,
+    padding: SIZES.md,
+    marginBottom: SIZES.md,
+    ...SHADOWS.small,
+  },
+  skeletonTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SIZES.md,
+  },
+  skeletonBadge: { width: 80, height: 20 },
+  skeletonTime: { width: 60, height: 16 },
+  skeletonDesc1: { width: '100%', height: 16, marginBottom: 8 },
+  skeletonDesc2: { width: '80%', height: 16, marginBottom: SIZES.md },
+  skeletonBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  skeletonStatus: { width: 100, height: 24, borderRadius: 12 },
+  skeletonCoords: { width: 120, height: 14 },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
