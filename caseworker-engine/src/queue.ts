@@ -42,6 +42,11 @@ export const slaWorker = new Worker('sla-timers', async (job: Job) => {
 
   // Check if ticket is still stuck in ASSIGNED_TO_OFFICER
   if (ticket.state === 'ASSIGNED_TO_OFFICER') {
+    if (ticket.isEscalated) {
+      console.log(`[Worker] Ticket ${ticketId} is already escalated. Skipping to prevent infinite loop.`);
+      return;
+    }
+
     console.warn(`[Worker] HIGH-PRIORITY ESCALATION BREACH: SLA Breach detected for Ticket ${ticketId}!`);
     
     // Execute escalation routing rules:
