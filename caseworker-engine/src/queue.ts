@@ -67,3 +67,5 @@ export const slaWorker = new Worker('sla-timers', async (job: Job) => {
 slaWorker.on('failed', (job: Job | undefined, err: Error) => {
   console.error(`[Worker] Job ${job?.id} failed with error:`, err);
 });
+
+console.log("[Queue] SLA Background Worker initialized and listening for jobs...");
