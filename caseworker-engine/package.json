@@ -6,11 +6,12 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "start:combined": "node dist/server.js & node dist/queue.js",
+    "start:combined": "concurrently \"node dist/server.js\" \"node dist/queue.js\"",
     "worker": "node dist/queue.js",
     "dev": "ts-node src/server.ts"
   },
   "dependencies": {
+    "concurrently": "^8.2.2",
     "bullmq": "^5.0.0",
     "express": "^4.19.2",
     "ioredis": "^5.4.1"
