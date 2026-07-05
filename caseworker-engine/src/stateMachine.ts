@@ -112,7 +112,7 @@ export class StateMachineEngine {
       // Schedule a delayed BullMQ job representing an SLA countdown timer (2 hours default)
       const jobId = `sla-timer-${ticket.id}`;
       // In a real app we might read the SLA duration from env/config, hardcoded here as requested
-      const delayMs = 2 * 60 * 60 * 1000; 
+      const delayMs = 10000; 
       
       await slaQueue.add('check-sla', { ticketId: ticket.id }, { 
         jobId, 
