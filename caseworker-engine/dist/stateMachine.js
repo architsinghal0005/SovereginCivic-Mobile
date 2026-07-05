@@ -1,22 +1,67 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StateMachineEngine = exports.NotificationGateway = exports.repository = void 0;
+exports.getOfficerAndSupervisor = getOfficerAndSupervisor;
 const queue_1 = require("./queue");
-// Abstracted out Database - Mock Repository layer
-class MockRepository {
-    tickets = new Map();
+const ioredis_1 = __importDefault(require("ioredis"));
+const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const redis = new ioredis_1.default(redisUrl);
+class RedisRepository {
     async save(ticket) {
-        this.tickets.set(ticket.id, ticket);
+        await redis.set(`ticket:${ticket.id}`, JSON.stringify(ticket));
     }
     async get(id) {
-        return this.tickets.get(id) || null;
+        const data = await redis.get(`ticket:${id}`);
+        if (!data)
+            return null;
+        return JSON.parse(data);
+    }
+    async getAll() {
+        const keys = await redis.keys('ticket:*');
+        if (keys.length === 0)
+            return [];
+        const values = await redis.mget(keys);
+        return values.filter((v) => v !== null).map((v) => JSON.parse(v));
     }
 }
-exports.repository = new MockRepository();
+exports.repository = new RedisRepository();
+function getOfficerAndSupervisor(category, ward) {
+    switch (category) {
+        case 'Road':
+            return { assignedOfficerId: `Road_Officer_${ward}`, supervisorId: `SUPERVISOR_ROAD_${ward}` };
+        case 'Water':
+            return { assignedOfficerId: `Water_Officer_${ward}`, supervisorId: `SUPERVISOR_WATER_${ward}` };
+        case 'Garbage':
+            return { assignedOfficerId: `Sanitation_Officer_${ward}`, supervisorId: `SUPERVISOR_SANITATION_${ward}` };
+        case 'Electricity':
+            return { assignedOfficerId: `Electrical_Officer_${ward}`, supervisorId: `SUPERVISOR_ELEC_${ward}` };
+        default:
+            return { assignedOfficerId: `General_Officer_${ward}`, supervisorId: `SUPERVISOR_GENERAL_${ward}` };
+    }
+}
 class NotificationGateway {
-    static async sendCitizenAlert(ticketId, nextState, localizedMessage) {
-        // Isolated Mock Notification Gateway Utility
-        console.log(`[NotificationGateway] Alert for Ticket ${ticketId}: ${localizedMessage} (New State: ${nextState})`);
+    static async sendCitizenAlert(ticket, nextState, localizedMessage) {
+        console.log(`[NotificationGateway] Alert for Ticket ${ticket.id}: ${localizedMessage} (New State: ${nextState})`);
+        try {
+            const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:4000';
+            await fetch(`${gatewayUrl}/api/notify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ticketId: ticket.id,
+                    citizenId: ticket.citizenId,
+                    state: nextState,
+                    message: localizedMessage,
+                    timestamp: new Date().toISOString()
+                })
+            });
+        }
+        catch (error) {
+            console.error(`[NotificationGateway] Failed to send webhook for Ticket ${ticket.id}:`, error);
+        }
     }
 }
 exports.NotificationGateway = NotificationGateway;
@@ -50,7 +95,7 @@ class StateMachineEngine {
         await exports.repository.save(ticket);
         // Mock Notification Hook
         const localizedMessage = this.getDescriptiveMessage(newState, ticket.isEscalated);
-        await NotificationGateway.sendCitizenAlert(ticket.id, newState, localizedMessage);
+        await NotificationGateway.sendCitizenAlert(ticket, newState, localizedMessage);
         // Asynchronous SLA Engine (BullMQ) Timer Management
         if (newState === 'ASSIGNED_TO_OFFICER') {
             // Schedule a delayed BullMQ job representing an SLA countdown timer (2 hours default)
@@ -76,12 +121,19 @@ class StateMachineEngine {
         }
         return ticket;
     }
-    static async initializeTicket(clusterId, clusterSize, timestamp) {
+    static async initializeTicket(clusterId, clusterSize, timestamp, category, ward, citizenId) {
         const ticketId = `TICKET-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        const { assignedOfficerId, supervisorId } = getOfficerAndSupervisor(category, ward);
         const newTicket = {
             id: ticketId,
             clusterId,
             clusterSize,
+            category,
+            ward,
+            citizenId,
+            initialOfficerId: assignedOfficerId,
+            supervisorId: supervisorId,
+            assignedOfficerId: assignedOfficerId, // Initial assignment
             state: 'CLUSTER_DETECTED',
             isEscalated: false,
             createdAt: new Date(timestamp),
