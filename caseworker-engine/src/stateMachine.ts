@@ -150,7 +150,7 @@ export class StateMachineEngine {
       initialOfficerId: assignedOfficerId,
       supervisorId: supervisorId,
       assignedOfficerId: assignedOfficerId, // Initial assignment
-      state: 'CLUSTER_DETECTED',
+      state: 'ASSIGNED_TO_OFFICER',
       isEscalated: false,
       createdAt: new Date(timestamp),
       updatedAt: new Date()
