@@ -58,7 +58,8 @@ export class NotificationGateway {
         })
       });
     } catch (error) {
-      console.error(`[NotificationGateway] Failed to send webhook for Ticket ${ticket.id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Gateway offline, moving forward without notification:", errorMessage);
     }
   }
 }
