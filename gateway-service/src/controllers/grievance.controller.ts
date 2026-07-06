@@ -92,10 +92,11 @@ export const getGrievanceHistory = async (req: Request, res: Response) => {
   }
 
   try {
-    const axios = (await import('axios')).default;
+    const axios = require('axios');
     const graphUrl = `${(process.env.GRAPH_SERVICE_URL || 'http://localhost:4000').replace(/\/$/, '')}/api/graph/citizen/${citizenId}/grievances`;
     const response = await axios.get(graphUrl, { timeout: 10000 });
-    return res.status(200).json({ success: true, grievances: response.data.grievances });
+    // Return exactly what the mobile app expects
+    return res.status(200).json({ success: true, grievances: response.data.grievances || [] });
   } catch (error: any) {
     const status = error.response?.status || 500;
     logger.error('Failed to fetch grievance history', { citizenId, error: error.message });
