@@ -8,6 +8,7 @@ export interface Ticket {
   category: TicketCategory;
   ward: string;
   citizenId: string;
+  grievanceIds: string[];
   description?: string;
   initialOfficerId?: string;
   supervisorId?: string;

@@ -11,15 +11,15 @@ app.use(express_1.default.json());
 // Webhook Endpoint
 app.post('/api/workflow/trigger-caseworker', async (req, res) => {
     try {
-        const { clusterId, clusterSize, timestamp, category, ward, citizenId } = req.body;
-        if (!clusterId || typeof clusterSize !== 'number' || !timestamp || !category || !ward || !citizenId) {
+        const { clusterId, clusterSize, timestamp, category, ward, citizenId, grievanceIds } = req.body;
+        if (!clusterId || typeof clusterSize !== 'number' || !timestamp || !category || !ward || !citizenId || !grievanceIds) {
             res.status(400).json({
-                error: 'Missing or invalid required payload fields: clusterId, clusterSize, timestamp, category, ward, citizenId.'
+                error: 'Missing or invalid required payload fields: clusterId, clusterSize, timestamp, category, ward, citizenId, grievanceIds.'
             });
             return;
         }
-        // 1. Initialize the state machine to CLUSTER_DETECTED and store it via repository layer
-        const ticket = await stateMachine_1.StateMachineEngine.initializeTicket(clusterId, clusterSize, timestamp, category, ward, citizenId);
+        // 1. Initialize the state machine to ASSIGNED_TO_OFFICER and store it via repository layer
+        const ticket = await stateMachine_1.StateMachineEngine.initializeTicket(clusterId, clusterSize, timestamp, category, ward, citizenId, grievanceIds);
         // 2. Trigger the state transition engine to advance to ASSIGNED_TO_OFFICER
         const updatedTicket = await stateMachine_1.StateMachineEngine.transition(ticket.id, 'ASSIGNED_TO_OFFICER');
         res.status(201).json({

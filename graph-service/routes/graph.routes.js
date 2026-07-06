@@ -5,10 +5,14 @@ import {
     getAnalyticsSummary, 
     getAnalytics 
 } from "../controllers/analytics.controller.js";
+import { getCitizenGrievances } from "../controllers/citizen.controller.js";
+import { updateGrievancesStatus } from "../controllers/update.controller.js";
 
 const router = Router();
 router.get('/analytics', getAnalytics);
 router.get('/heatmap', getHeatmap);
 router.get('/analytics/summary', getAnalyticsSummary);
+router.get('/citizen/:citizenId/grievances', getCitizenGrievances);
+router.patch('/grievances/status', updateGrievancesStatus);
 
 export default router;

@@ -53,6 +53,7 @@ class NotificationGateway {
                 body: JSON.stringify({
                     ticketId: ticket.id,
                     citizenId: ticket.citizenId,
+                    grievanceIds: ticket.grievanceIds,
                     state: nextState,
                     message: localizedMessage,
                     timestamp: new Date().toISOString()
@@ -60,7 +61,8 @@ class NotificationGateway {
             });
         }
         catch (error) {
-            console.error(`[NotificationGateway] Failed to send webhook for Ticket ${ticket.id}:`, error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error("Gateway offline, moving forward without notification:", errorMessage);
         }
     }
 }
@@ -101,7 +103,7 @@ class StateMachineEngine {
             // Schedule a delayed BullMQ job representing an SLA countdown timer (2 hours default)
             const jobId = `sla-timer-${ticket.id}`;
             // In a real app we might read the SLA duration from env/config, hardcoded here as requested
-            const delayMs = 2 * 60 * 60 * 1000;
+            const delayMs = 10000;
             await queue_1.slaQueue.add('check-sla', { ticketId: ticket.id }, {
                 jobId,
                 delay: delayMs,
@@ -121,7 +123,7 @@ class StateMachineEngine {
         }
         return ticket;
     }
-    static async initializeTicket(clusterId, clusterSize, timestamp, category, ward, citizenId) {
+    static async initializeTicket(clusterId, clusterSize, timestamp, category, ward, citizenId, grievanceIds) {
         const ticketId = `TICKET-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const { assignedOfficerId, supervisorId } = getOfficerAndSupervisor(category, ward);
         const newTicket = {
@@ -131,10 +133,11 @@ class StateMachineEngine {
             category,
             ward,
             citizenId,
+            grievanceIds,
             initialOfficerId: assignedOfficerId,
             supervisorId: supervisorId,
             assignedOfficerId: assignedOfficerId, // Initial assignment
-            state: 'CLUSTER_DETECTED',
+            state: 'ASSIGNED_TO_OFFICER',
             isEscalated: false,
             createdAt: new Date(timestamp),
             updatedAt: new Date()

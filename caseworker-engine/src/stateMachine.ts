@@ -52,6 +52,7 @@ export class NotificationGateway {
         body: JSON.stringify({
           ticketId: ticket.id,
           citizenId: ticket.citizenId,
+          grievanceIds: ticket.grievanceIds,
           state: nextState,
           message: localizedMessage,
           timestamp: new Date().toISOString()
@@ -137,7 +138,7 @@ export class StateMachineEngine {
     return ticket;
   }
 
-  static async initializeTicket(clusterId: string, clusterSize: number, timestamp: string, category: TicketCategory, ward: string, citizenId: string): Promise<Ticket> {
+  static async initializeTicket(clusterId: string, clusterSize: number, timestamp: string, category: TicketCategory, ward: string, citizenId: string, grievanceIds: string[]): Promise<Ticket> {
     const ticketId = `TICKET-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const { assignedOfficerId, supervisorId } = getOfficerAndSupervisor(category, ward);
     const newTicket: Ticket = {
@@ -147,6 +148,7 @@ export class StateMachineEngine {
       category,
       ward,
       citizenId,
+      grievanceIds,
       initialOfficerId: assignedOfficerId,
       supervisorId: supervisorId,
       assignedOfficerId: assignedOfficerId, // Initial assignment

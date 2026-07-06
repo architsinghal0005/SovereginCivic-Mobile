@@ -45,7 +45,7 @@ export const ingestGrievance = async (req, res) => {
             MERGE (g)-[:ROOT_CAUSE_BY]->(asset)
         )
         
-        RETURN size(cluster) AS clusterSize, asset.id AS assetId, finalScore
+        RETURN size(cluster) AS clusterSize, asset.id AS assetId, finalScore, [node IN cluster | node.id] AS grievanceIds
     `;
 
     try {
@@ -64,7 +64,11 @@ export const ingestGrievance = async (req, res) => {
                     clusterId: record.get("assetId") || "unlinked-cluster",
                     clusterSize: record.get("clusterSize").toNumber(), 
                     confidenceScore: record.get("finalScore").toNumber(),
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    category: category,
+                    ward: affectedWard || 'Unknown',
+                    citizenId: citizenId,
+                    grievanceIds: record.get("grievanceIds")
                 });
                 console.log("✅ Webhook triggered successfully!");
             } catch (webhookError) {

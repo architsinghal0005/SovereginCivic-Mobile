@@ -37,6 +37,10 @@ exports.slaWorker = new bullmq_1.Worker('sla-timers', async (job) => {
     }
     // Check if ticket is still stuck in ASSIGNED_TO_OFFICER
     if (ticket.state === 'ASSIGNED_TO_OFFICER') {
+        if (ticket.isEscalated) {
+            console.log(`[Worker] Ticket ${ticketId} is already escalated. Skipping to prevent infinite loop.`);
+            return;
+        }
         console.warn(`[Worker] HIGH-PRIORITY ESCALATION BREACH: SLA Breach detected for Ticket ${ticketId}!`);
         // Execute escalation routing rules:
         // - Mark ticket as isEscalated: true
@@ -55,3 +59,4 @@ exports.slaWorker = new bullmq_1.Worker('sla-timers', async (job) => {
 exports.slaWorker.on('failed', (job, err) => {
     console.error(`[Worker] Job ${job?.id} failed with error:`, err);
 });
+console.log("[Queue] SLA Background Worker initialized and listening for jobs...");

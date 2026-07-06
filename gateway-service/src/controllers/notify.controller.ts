@@ -5,7 +5,8 @@ import { logger } from '../utils/logger';
 
 interface NotificationPayload {
   ticketId: string;
-  newState: string;
+  grievanceIds: string[];
+  state: string;
   message: string;
   timestamp: string;
 }
@@ -18,17 +19,25 @@ const notificationsStore: NotificationPayload[] = [];
  * POST /api/notify
  */
 export const receiveNotification = asyncHandler(async (req: Request, res: Response) => {
-  const { ticketId, newState, message } = req.body;
+  const { ticketId, grievanceIds, state, message } = req.body;
 
   const notification: NotificationPayload = {
     ticketId,
-    newState,
+    grievanceIds: grievanceIds || [],
+    state,
     message,
     timestamp: new Date().toISOString()
   };
 
   notificationsStore.push(notification);
-  logger.info('Received and stored notification', { ticketId, newState });
+  logger.info('Received and stored notification', { ticketId, state });
+
+  if (grievanceIds && grievanceIds.length > 0 && state) {
+    const graphUrl = `${(process.env.GRAPH_SERVICE_URL || 'http://localhost:4000').replace(/\/$/, '')}/api/graph/grievances/status`;
+    axios.patch(graphUrl, { grievanceIds, status: state }).catch(err => {
+      logger.error('Failed to update graph service statuses', { error: err.message });
+    });
+  }
 
   res.status(201).json({ success: true, message: 'Notification stored successfully' });
 });
@@ -49,9 +58,9 @@ export const getCitizenNotifications = asyncHandler(async (req: Request, res: Re
     // Extract ticket IDs
     const ticketIds = grievances.map((g: any) => g.id);
 
-    // 2. Filter notifications belonging to these ticket IDs
+    // 2. Filter notifications belonging to these grievance IDs
     const citizenNotifications = notificationsStore
-      .filter(n => ticketIds.includes(n.ticketId))
+      .filter(n => n.grievanceIds && n.grievanceIds.some(id => ticketIds.includes(id)))
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()); // newest first
 
     res.status(200).json({ success: true, notifications: citizenNotifications });
