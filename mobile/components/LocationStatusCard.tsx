@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS, SIZES, SHADOWS } from '../constants/theme';
+import { SIZES, SHADOWS } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 
 export type GPSStatus = 'searching' | 'acquired' | 'denied' | 'off';
 
@@ -10,40 +11,42 @@ interface LocationStatusCardProps {
 }
 
 export const LocationStatusCard = React.memo<LocationStatusCardProps>(({ status }) => {
+  const { colors } = useTheme();
+
   const getStatusInfo = () => {
     switch (status) {
       case 'acquired':
         return {
           icon: 'crosshairs-gps',
-          color: COLORS.success,
+          color: colors.success,
           text: 'GPS Location Acquired',
-          bgColor: COLORS.surface,
-          borderColor: COLORS.success,
+          bgColor: colors.surface,
+          borderColor: colors.success,
         };
       case 'searching':
         return {
           icon: 'crosshairs-question',
-          color: COLORS.warning,
+          color: colors.warning,
           text: 'Acquiring GPS Signal...',
-          bgColor: COLORS.warningBackground,
-          borderColor: COLORS.warning,
+          bgColor: colors.warningBackground,
+          borderColor: colors.warning,
         };
       case 'denied':
         return {
           icon: 'crosshairs-off',
-          color: COLORS.error,
+          color: colors.error,
           text: 'Location Access Denied',
-          bgColor: COLORS.errorBackground,
-          borderColor: COLORS.error,
+          bgColor: colors.errorBackground,
+          borderColor: colors.error,
         };
       case 'off':
       default:
         return {
           icon: 'crosshairs-off',
-          color: COLORS.disabled,
+          color: colors.disabled,
           text: 'GPS is Disabled',
-          bgColor: COLORS.disabledBackground,
-          borderColor: COLORS.border,
+          bgColor: colors.disabledBackground,
+          borderColor: colors.border,
         };
     }
   };
@@ -51,7 +54,7 @@ export const LocationStatusCard = React.memo<LocationStatusCardProps>(({ status 
   const info = getStatusInfo();
 
   return (
-    <View style={[styles.container, { backgroundColor: info.bgColor, borderColor: info.borderColor }]}>
+    <View style={[styles.container, { backgroundColor: info.bgColor, borderColor: info.borderColor, shadowColor: colors.cardShadow }]}>
       <MaterialCommunityIcons name={info.icon as any} size={24} color={info.color} />
       <Text style={[styles.text, { color: info.color }]}>{info.text}</Text>
     </View>

@@ -9,10 +9,15 @@ import { errorConverter, errorHandler } from './middleware/error.middleware';
 
 const app: Express = express();
 
+import path from 'path';
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Request Logging Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {

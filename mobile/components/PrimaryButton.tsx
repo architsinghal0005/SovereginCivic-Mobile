@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { COLORS, SIZES, SHADOWS } from '../constants/theme';
+import { SIZES, SHADOWS } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 
 interface PrimaryButtonProps {
   title: string;
@@ -19,11 +20,14 @@ export const PrimaryButton = React.memo<PrimaryButtonProps>(({
   style,
   textStyle,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
       style={[
         styles.button,
-        (disabled || loading) && styles.disabledButton,
+        { backgroundColor: colors.primary, shadowColor: colors.cardShadow },
+        (disabled || loading) && { backgroundColor: colors.disabledBackground, shadowOpacity: 0, elevation: 0 },
         style,
       ]}
       onPress={onPress}
@@ -33,9 +37,14 @@ export const PrimaryButton = React.memo<PrimaryButtonProps>(({
       accessibilityState={{ disabled: disabled || loading }}
     >
       {loading ? (
-        <ActivityIndicator color={COLORS.textSecondary} />
+        <ActivityIndicator color={colors.textSecondary} />
       ) : (
-        <Text style={[styles.text, (disabled || loading) && styles.disabledText, textStyle]}>{title}</Text>
+        <Text style={[
+          styles.text, 
+          { color: colors.surface },
+          (disabled || loading) && { color: colors.disabled }, 
+          textStyle
+        ]}>{title}</Text>
       )}
     </TouchableOpacity>
   );
@@ -43,7 +52,6 @@ export const PrimaryButton = React.memo<PrimaryButtonProps>(({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: COLORS.primary,
     paddingVertical: SIZES.md,
     paddingHorizontal: SIZES.lg,
     borderRadius: SIZES.radius,
@@ -53,18 +61,9 @@ const styles = StyleSheet.create({
     width: '100%',
     ...SHADOWS.small,
   },
-  disabledButton: {
-    backgroundColor: COLORS.disabledBackground,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
   text: {
-    color: COLORS.surface,
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
   },
-  disabledText: {
-    color: COLORS.disabled,
-  }
 });

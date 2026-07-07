@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 
 interface SkeletonLoaderProps {
   style?: ViewStyle;
@@ -8,6 +8,7 @@ interface SkeletonLoaderProps {
 
 export const SkeletonLoader = ({ style }: SkeletonLoaderProps) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
 
   useEffect(() => {
     Animated.loop(
@@ -32,13 +33,12 @@ export const SkeletonLoader = ({ style }: SkeletonLoaderProps) => {
   });
 
   return (
-    <Animated.View style={[styles.skeleton, style, { opacity }]} />
+    <Animated.View style={[styles.skeleton, { backgroundColor: colors.border }, style, { opacity }]} />
   );
 };
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: COLORS.border,
     borderRadius: 4,
   },
 });

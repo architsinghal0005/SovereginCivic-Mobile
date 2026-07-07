@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, SafeAreaView as RNSafeAreaView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
-import MapView, { Marker } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MapComponent } from '../components/Map';
 import { Grievance } from '../services/api';
-import { COLORS, SIZES, SHADOWS } from '../constants/theme';
+import { SIZES, SHADOWS } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 import { Timeline } from '../components/Timeline';
 import { getTimelineForStatus } from '../utils/timeline';
+import { CONFIG, getFullUrl } from '../constants/config';
 
 interface ComplaintDetailsScreenProps {
   report: Grievance;
@@ -28,25 +31,32 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }
   PENDING:     { color: '#D97706', bg: '#FFFBEB', label: 'Pending' },
   IN_PROGRESS: { color: '#0EA5E9', bg: '#E0F2FE', label: 'In Progress' },
   RESOLVED:    { color: '#059669', bg: '#D1FAE5', label: 'Resolved' },
+  ESCALATED:   { color: '#DC2626', bg: '#FEE2E2', label: 'Escalated' },
 };
 
-function formatDate(isoString: string | null): string {
-  if (!isoString) return 'Unknown date';
-  try {
-    const date = new Date(isoString.split('[')[0]);
-    return date.toLocaleString();
-  } catch {
-    return 'Unknown date';
-  }
-}
+import { formatDateIST } from '../utils/date';
 
 export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDetailsScreenProps) {
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [mapError, setMapError] = useState(false);
 
   const categoryColor = CATEGORY_COLORS[report.category] ?? CATEGORY_COLORS['Other'];
-  const statusConfig = STATUS_CONFIG[report.status] ?? { color: '#64748B', bg: '#F1F5F9', label: report.status };
+  const statusConfig = STATUS_CONFIG[report.status] ?? { color: '#64748B', bg: isDark ? '#334155' : '#F1F5F9', label: report.status };
+
+  let displayDescription = report.description || 'No description provided.';
+  if (typeof report.description === 'string' && report.description.trim().startsWith('{') && report.description.trim().endsWith('}')) {
+    try {
+      const parsed = JSON.parse(report.description);
+      if ('transcript' in parsed) {
+        displayDescription = parsed.transcript?.trim() ? parsed.transcript : 'Voice report submitted (processing transcript...)';
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
 
   useEffect(() => {
     return sound ? () => { sound.unloadAsync(); } : undefined;
@@ -65,8 +75,12 @@ export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDeta
         await sound.playAsync();
       } else {
         try {
+          const audioUriToPlay = getFullUrl(report.audioUrl);
           const { sound: newSound } = await Audio.Sound.createAsync(
-            { uri: report.audioUrl },
+            { 
+              uri: audioUriToPlay,
+              headers: { 'ngrok-skip-browser-warning': 'true' }
+            },
             { shouldPlay: true }
           );
           newSound.setOnPlaybackStatusUpdate((status: any) => {
@@ -86,27 +100,34 @@ export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDeta
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton} accessibilityLabel="Go back">
-          <Text style={styles.backArrow}>←</Text>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.surface, 
+          borderBottomColor: colors.border,
+          paddingTop: Platform.OS === 'ios' ? insets.top : insets.top + SIZES.sm,
+        }
+      ]}>
+        <TouchableOpacity onPress={onBack} style={[styles.backButton, { backgroundColor: colors.background }]} accessibilityLabel="Go back">
+          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Complaint Details</Text>
-          <Text style={styles.headerSubtitle}>ID: {report.id}</Text>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Complaint Details</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>ID: {report.id}</Text>
         </View>
         <View style={styles.refreshButton} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} bounces={false}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: Math.max(insets.bottom + 20, SIZES.xxl) }]} bounces={false}>
         <View style={styles.topSection}>
-          <View style={[styles.statusChip, { backgroundColor: statusConfig.bg }]}>
+          <View style={[styles.statusChip, { backgroundColor: isDark ? `${statusConfig.color}20` : statusConfig.bg }]}>
             <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
             <Text style={[styles.statusText, { color: statusConfig.color }]}>
               {statusConfig.label}
             </Text>
           </View>
-          <Text style={styles.timestamp}>{formatDate(report.createdAt)}</Text>
+          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{formatDateIST(report.createdAt)}</Text>
         </View>
 
         <View style={styles.categorySection}>
@@ -115,38 +136,45 @@ export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDeta
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Status Timeline</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 12 }]}>Status Timeline</Text>
           <Timeline steps={getTimelineForStatus(report.status)} />
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
           <View style={styles.sectionHeaderRow}>
-            <MaterialCommunityIcons name="text" size={20} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Description</Text>
+            <MaterialCommunityIcons name="text" size={20} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
           </View>
-          <Text style={styles.descriptionText}>
-            {report.description || 'No description provided.'}
+          <Text style={[styles.descriptionText, { color: colors.text }]}>
+            {displayDescription}
           </Text>
         </View>
 
         {report.imageUrl && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
             <View style={styles.sectionHeaderRow}>
-              <MaterialCommunityIcons name="image" size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Image</Text>
+              <MaterialCommunityIcons name="image" size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Image</Text>
             </View>
-            <Image source={{ uri: report.imageUrl }} style={styles.image} resizeMode="cover" />
+            <Image 
+              source={{ 
+                uri: getFullUrl(report.imageUrl),
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+              }} 
+              style={[styles.image, { backgroundColor: colors.border }]} 
+              resizeMode="cover" 
+            />
           </View>
         )}
 
         {report.audioUrl && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
             <View style={styles.sectionHeaderRow}>
-              <MaterialCommunityIcons name="microphone" size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Audio</Text>
+              <MaterialCommunityIcons name="microphone" size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Audio</Text>
             </View>
-            <TouchableOpacity style={styles.audioButton} onPress={toggleAudio} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.audioButton, { backgroundColor: colors.primary }]} onPress={toggleAudio} activeOpacity={0.7}>
               <MaterialCommunityIcons name={isPlaying ? "pause" : "play"} size={20} color="#fff" style={{ marginRight: 8 }} />
               <Text style={styles.audioButtonText}>{isPlaying ? 'Pause Audio' : 'Play Audio'}</Text>
             </TouchableOpacity>
@@ -154,69 +182,55 @@ export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDeta
         )}
 
         {(report.lat != null && report.lng != null) && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
             <View style={styles.sectionHeaderRow}>
-              <MaterialCommunityIcons name="map-marker" size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Location (GPS)</Text>
+              <MaterialCommunityIcons name="map-marker" size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Location (GPS)</Text>
             </View>
             {!mapError ? (
               <View style={styles.mapContainer} accessible={true} accessibilityLabel="Map showing the complaint location">
-                <MapView
-                  style={styles.map}
-                  initialRegion={{
-                    latitude: Number(report.lat),
-                    longitude: Number(report.lng),
-                    latitudeDelta: 0.005,
-                    longitudeDelta: 0.005,
-                  }}
+                <MapComponent
+                  latitude={Number(report.lat)}
+                  longitude={Number(report.lng)}
                   scrollEnabled={false}
                   zoomEnabled={false}
                   pitchEnabled={false}
                   rotateEnabled={false}
-                >
-                  <Marker 
-                    coordinate={{ latitude: Number(report.lat), longitude: Number(report.lng) }} 
-                    title="Complaint Location"
-                  />
-                </MapView>
+                />
               </View>
             ) : (
               <View>
-                <Text style={styles.coords}>Latitude: {report.lat}</Text>
-                <Text style={styles.coords}>Longitude: {report.lng}</Text>
+                <Text style={[styles.coords, { color: colors.textSecondary }]}>Latitude: {report.lat}</Text>
+                <Text style={[styles.coords, { color: colors.textSecondary }]}>Longitude: {report.lng}</Text>
               </View>
             )}
           </View>
         )}
 
         {report.citizenId && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
             <View style={styles.sectionHeaderRow}>
-              <MaterialCommunityIcons name="account" size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Citizen Info</Text>
+              <MaterialCommunityIcons name="account" size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Citizen Info</Text>
             </View>
-            <Text style={styles.citizenText}>Citizen ID: {report.citizenId}</Text>
+            <Text style={[styles.citizenText, { color: colors.textSecondary }]}>Citizen ID: {report.citizenId}</Text>
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.md,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     ...SHADOWS.small,
   },
   backButton: {
@@ -225,11 +239,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 20,
-    backgroundColor: COLORS.background,
   },
   backArrow: {
     fontSize: 22,
-    color: COLORS.primary,
     fontWeight: '700',
   },
   headerCenter: {
@@ -239,11 +251,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.primary,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginTop: 2,
   },
   refreshButton: {
@@ -253,7 +263,6 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: SIZES.md,
-    paddingBottom: SIZES.xxl,
   },
   topSection: {
     flexDirection: 'row',
@@ -280,7 +289,6 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 13,
-    color: COLORS.textSecondary,
   },
   categorySection: {
     alignItems: 'flex-start',
@@ -298,7 +306,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   card: {
-    backgroundColor: COLORS.surface,
     borderRadius: SIZES.md,
     padding: SIZES.lg,
     marginBottom: SIZES.md,
@@ -312,23 +319,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.text,
     marginLeft: 8,
   },
   descriptionText: {
     fontSize: 15,
-    color: COLORS.text,
     lineHeight: 24,
   },
   image: {
     width: '100%',
     height: 200,
     borderRadius: SIZES.sm,
-    backgroundColor: COLORS.border,
     marginTop: SIZES.xs,
   },
   audioButton: {
-    backgroundColor: COLORS.primary,
     paddingVertical: SIZES.md,
     paddingHorizontal: SIZES.lg,
     borderRadius: SIZES.radius,
@@ -354,11 +357,9 @@ const styles = StyleSheet.create({
   },
   coords: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     marginBottom: 4,
   },
   citizenText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
   },
 });

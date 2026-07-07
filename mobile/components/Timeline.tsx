@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { COLORS, SIZES } from '../constants/theme';
+import { SIZES } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 import { TimelineStep } from '../utils/timeline';
 
 interface TimelineProps {
@@ -9,6 +10,7 @@ interface TimelineProps {
 
 const TimelineItem = ({ step, index, isLast }: { step: TimelineStep; index: number; isLast: boolean }) => {
   const animValue = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
 
   useEffect(() => {
     Animated.timing(animValue, {
@@ -29,13 +31,25 @@ const TimelineItem = ({ step, index, isLast }: { step: TimelineStep; index: numb
   return (
     <Animated.View style={[styles.stepContainer, { opacity, transform: [{ translateY }] }]}>
       <View style={styles.indicatorContainer}>
-        <View style={[styles.dot, step.completed && styles.dotCompleted]}>
+        <View style={[
+          styles.dot, 
+          { borderColor: colors.border, backgroundColor: colors.background },
+          step.completed && { borderColor: colors.primary, backgroundColor: colors.primary }
+        ]}>
           {step.completed && <Text style={styles.checkmark}>✓</Text>}
         </View>
-        {!isLast && <View style={[styles.line, step.completed && styles.lineCompleted]} />}
+        {!isLast && <View style={[
+          styles.line, 
+          { backgroundColor: colors.border },
+          step.completed && { backgroundColor: colors.primary }
+        ]} />}
       </View>
       <View style={styles.labelContainer}>
-        <Text style={[styles.label, step.current && styles.labelCurrent, !step.completed && styles.labelPending]}>
+        <Text style={[
+          styles.label, 
+          { color: step.current ? colors.primary : (step.completed ? colors.text : colors.textSecondary) },
+          step.current && styles.labelCurrent
+        ]}>
           {step.label}
         </Text>
       </View>
@@ -74,15 +88,9 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
-  },
-  dotCompleted: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary,
   },
   checkmark: {
     color: '#fff',
@@ -92,12 +100,8 @@ const styles = StyleSheet.create({
   line: {
     width: 2,
     flex: 1,
-    backgroundColor: COLORS.border,
     marginVertical: -2,
     minHeight: 25,
-  },
-  lineCompleted: {
-    backgroundColor: COLORS.primary,
   },
   labelContainer: {
     flex: 1,
@@ -106,14 +110,9 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: COLORS.text,
     marginTop: -2,
   },
   labelCurrent: {
     fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  labelPending: {
-    color: COLORS.textSecondary,
   },
 });

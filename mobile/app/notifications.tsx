@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, StatusBar } from 'react-native';
-import { COLORS, SIZES, SHADOWS } from '../constants/theme';
+import { SIZES, SHADOWS } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 import { NotificationCard } from '../components/NotificationCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useNotifications } from '../hooks/useNotifications';
@@ -8,6 +9,7 @@ import { useNotifications } from '../hooks/useNotifications';
 const CITIZEN_ID = 'dummy-citizen-123';
 
 export default function NotificationScreen() {
+  const { colors } = useTheme();
   const { notifications, loading, error, refresh, markAsRead } = useNotifications(CITIZEN_ID);
 
   useEffect(() => {
@@ -19,23 +21,23 @@ export default function NotificationScreen() {
     return (
       <View style={styles.emptyContainer} accessible={true} accessibilityLabel="No notifications yet">
         <Text style={styles.emptyIcon}>📭</Text>
-        <Text style={styles.emptyTitle}>No Notifications</Text>
-        <Text style={styles.emptyMessage}>You're all caught up!</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>No Notifications</Text>
+        <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>You're all caught up!</Text>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header">Notifications</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, shadowColor: colors.cardShadow }]}>
+        <Text style={[styles.headerTitle, { color: colors.primary }]} accessibilityRole="header">Notifications</Text>
       </View>
 
       {error && (
-        <View style={styles.errorBanner} accessible={true}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorBanner, { backgroundColor: colors.errorBackground }]} accessible={true}>
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
           <TouchableOpacity onPress={refresh} accessibilityRole="button" accessibilityLabel="Retry fetching notifications">
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={[styles.retryText, { color: colors.primary }]}>Retry</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -43,7 +45,7 @@ export default function NotificationScreen() {
       {loading && notifications.length === 0 && (
         <View style={styles.listContent}>
           {[1, 2, 3, 4].map((key) => (
-            <View key={key} style={styles.skeletonCard}>
+            <View key={key} style={[styles.skeletonCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <View style={styles.skeletonContent}>
                 <SkeletonLoader style={styles.skeletonDot} />
                 <View style={styles.skeletonTextContainer}>
@@ -71,8 +73,8 @@ export default function NotificationScreen() {
           <RefreshControl
             refreshing={loading && notifications.length > 0}
             onRefresh={refresh}
-            tintColor={COLORS.primary}
-            colors={[COLORS.primary]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       />
@@ -83,29 +85,24 @@ export default function NotificationScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.md,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     alignItems: 'center',
     ...SHADOWS.small,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.primary,
   },
   listContent: {
     padding: SIZES.md,
     flexGrow: 1,
   },
   skeletonCard: {
-    backgroundColor: COLORS.surface,
     borderRadius: SIZES.radius,
     padding: SIZES.md,
     marginBottom: SIZES.md,
@@ -132,7 +129,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: COLORS.textSecondary,
     marginTop: SIZES.sm,
   },
   emptyContainer: {
@@ -148,24 +144,20 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.text,
     marginBottom: SIZES.sm,
   },
   emptyMessage: {
     fontSize: 15,
-    color: COLORS.textSecondary,
   },
   errorBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.errorBackground,
     padding: SIZES.md,
   },
   errorText: {
-    color: COLORS.error,
   },
   retryText: {
-    color: COLORS.primary,
     fontWeight: '700',
   },
 });
+

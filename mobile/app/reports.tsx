@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, FlatList,
+  View, Text, StyleSheet, SafeAreaView as RNSafeAreaView,
   ActivityIndicator, TouchableOpacity, Platform, StatusBar, RefreshControl,
+  Animated,
 } from 'react-native';
-import { COLORS, SIZES, SHADOWS } from '../constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SIZES, SHADOWS } from '../constants/theme';
 import { ReportCard } from '../components/ReportCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { useMyReports } from '../hooks/useMyReports';
 import ComplaintDetailsScreen from './ComplaintDetailsScreen';
 import { Grievance } from '../services/api';
+import { useTheme } from '../utils/theme';
 
 const CITIZEN_ID = 'dummy-citizen-123'; // matches what the submit form sends
 
@@ -19,20 +22,49 @@ interface MyReportsScreenProps {
 export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
   const { reports, loading, isRefreshing, error, refresh } = useMyReports(CITIZEN_ID);
   const [selectedReport, setSelectedReport] = useState<Grievance | null>(null);
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const flatListRef = useRef<any>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Show FAB when scrolled down more than 200px
+  const fabOpacity = scrollY.interpolate({
+    inputRange: [0, 200, 300],
+    outputRange: [0, 0, 1],
+    extrapolate: 'clamp',
+  });
+  
+  const fabTranslateY = scrollY.interpolate({
+    inputRange: [0, 200, 300],
+    outputRange: [50, 50, 0],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
     refresh();
   }, []);
 
+  const scrollToTop = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  };
+
   const renderEmpty = () => {
     if (loading) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyIcon}>📋</Text>
-        <Text style={styles.emptyTitle}>No Reports Yet</Text>
-        <Text style={styles.emptyMessage}>
+        <Text style={styles.emptyIcon}>📂</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>No Reports Yet</Text>
+        <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
           Your submitted grievances will appear here once they have been processed.
         </Text>
+        <TouchableOpacity 
+          style={[styles.emptyButton, { backgroundColor: colors.primary }]}
+          onPress={onBack}
+        >
+          <Text style={styles.emptyButtonText}>Report an Issue</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -42,31 +74,38 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton} accessibilityLabel="Go back">
-          <Text style={styles.backArrow}>←</Text>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.surface, 
+          borderBottomColor: colors.border,
+          paddingTop: Platform.OS === 'ios' ? insets.top : insets.top + SIZES.sm,
+        }
+      ]}>
+        <TouchableOpacity onPress={onBack} style={[styles.backButton, { backgroundColor: colors.background }]} accessibilityLabel="Go back">
+          <Text style={[styles.backArrow, { color: colors.primary }]}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>My Reports</Text>
-          <Text style={styles.headerSubtitle}>{reports.length} grievance{reports.length !== 1 ? 's' : ''} filed</Text>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>My Reports</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{reports.length} grievance{reports.length !== 1 ? 's' : ''} filed</Text>
         </View>
         <TouchableOpacity onPress={refresh} style={styles.refreshButton} disabled={loading || isRefreshing}>
           {isRefreshing ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Text style={[styles.refreshIcon, (loading || isRefreshing) && { opacity: 0.4 }]}>↻</Text>
+            <Text style={[styles.refreshIcon, { color: colors.primary }, (loading || isRefreshing) && { opacity: 0.4 }]}>↻</Text>
           )}
         </TouchableOpacity>
       </View>
 
       {/* Error Banner */}
       {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorBanner, { backgroundColor: colors.errorBackground, borderBottomColor: colors.error }]}>
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
           <TouchableOpacity onPress={refresh}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={[styles.retryText, { color: colors.primary }]}>Retry</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -75,7 +114,7 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
       {loading && reports.length === 0 && (
         <View style={styles.listContent}>
           {[1, 2, 3].map((key) => (
-            <View key={key} style={styles.skeletonCard}>
+            <View key={key} style={[styles.skeletonCard, { backgroundColor: colors.surface, shadowColor: colors.cardShadow }]}>
               <View style={styles.skeletonTopRow}>
                 <SkeletonLoader style={styles.skeletonBadge} />
                 <SkeletonLoader style={styles.skeletonTime} />
@@ -92,39 +131,62 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
       )}
 
       {/* List */}
-      <FlatList
+      <Animated.FlatList
+        ref={flatListRef}
         data={reports}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={({ item }) => <ReportCard report={item} onPress={() => setSelectedReport(item)} />}
+        keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
+        renderItem={({ item }: { item: any }) => <ReportCard report={item} onPress={() => setSelectedReport(item)} />}
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom + 80, SIZES.md) }]}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={loading && reports.length > 0}
             onRefresh={refresh}
-            tintColor={COLORS.primary}
-            colors={[COLORS.primary]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            title="Refreshing reports..."
+            titleColor={colors.primary}
           />
         }
       />
-    </SafeAreaView>
+      
+      {/* Scroll to Top FAB */}
+      <Animated.View style={[
+        styles.fabContainer, 
+        { 
+          opacity: fabOpacity, 
+          transform: [{ translateY: fabTranslateY }],
+          bottom: insets.bottom > 0 ? insets.bottom + 20 : 20,
+        }
+      ]}>
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary, shadowColor: colors.cardShadow }]}
+          onPress={scrollToTop}
+          activeOpacity={0.8}
+          accessibilityLabel="Scroll to top"
+        >
+          <Text style={styles.fabIcon}>↑</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.md,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     ...SHADOWS.small,
   },
   backButton: {
@@ -133,11 +195,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 20,
-    backgroundColor: COLORS.background,
   },
   backArrow: {
     fontSize: 22,
-    color: COLORS.primary,
     fontWeight: '700',
   },
   headerCenter: {
@@ -147,11 +207,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.primary,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginTop: 2,
   },
   refreshButton: {
@@ -162,7 +220,6 @@ const styles = StyleSheet.create({
   },
   refreshIcon: {
     fontSize: 24,
-    color: COLORS.primary,
     fontWeight: '700',
   },
   listContent: {
@@ -170,7 +227,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   skeletonCard: {
-    backgroundColor: COLORS.surface,
     borderRadius: SIZES.radius,
     padding: SIZES.md,
     marginBottom: SIZES.md,
@@ -197,11 +253,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SIZES.md,
   },
-  loadingText: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-    marginTop: SIZES.sm,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -210,40 +261,64 @@ const styles = StyleSheet.create({
     paddingTop: SIZES.giant,
   },
   emptyIcon: {
-    fontSize: 56,
+    fontSize: 72,
     marginBottom: SIZES.md,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: COLORS.text,
     marginBottom: SIZES.sm,
   },
   emptyMessage: {
     fontSize: 15,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+    marginBottom: SIZES.xl,
+  },
+  emptyButton: {
+    paddingHorizontal: SIZES.xl,
+    paddingVertical: SIZES.md,
+    borderRadius: SIZES.radius,
+    ...SHADOWS.small,
+  },
+  emptyButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   errorBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.errorBackground,
     paddingHorizontal: SIZES.md,
     paddingVertical: SIZES.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#FECACA',
   },
   errorText: {
-    color: COLORS.error,
     fontSize: 13,
     flex: 1,
     marginRight: SIZES.sm,
   },
   retryText: {
-    color: COLORS.primary,
     fontWeight: '700',
     fontSize: 13,
+  },
+  fabContainer: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 100,
+  },
+  fab: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.medium,
+  },
+  fabIcon: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../constants/theme';
+import { SIZES } from '../constants/theme';
+import { useTheme } from '../utils/theme';
 
 interface ImagePreviewPlaceholderProps {
   label?: string;
@@ -16,6 +17,8 @@ export const ImagePreviewPlaceholder: React.FC<ImagePreviewPlaceholderProps> = (
   onPress,
   onRemove,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
       {imageUri ? (
@@ -23,17 +26,21 @@ export const ImagePreviewPlaceholder: React.FC<ImagePreviewPlaceholderProps> = (
           <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
           <View style={styles.overlayControls}>
             <TouchableOpacity style={styles.controlButton} onPress={onPress} accessibilityLabel="Retake photo">
-              <MaterialCommunityIcons name="camera-retake" size={24} color={COLORS.surface} />
+              <MaterialCommunityIcons name="camera-retake" size={24} color={colors.surface} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.controlButton, styles.removeButton]} onPress={onRemove} accessibilityLabel="Remove photo">
-              <MaterialCommunityIcons name="delete" size={24} color={COLORS.surface} />
+              <MaterialCommunityIcons name="delete" size={24} color={colors.surface} />
             </TouchableOpacity>
           </View>
         </View>
       ) : (
-        <TouchableOpacity style={styles.placeholderContainer} onPress={onPress} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="camera-outline" size={48} color={COLORS.disabled} />
-          <Text style={styles.text}>{label}</Text>
+        <TouchableOpacity 
+          style={[styles.placeholderContainer, { backgroundColor: colors.disabledBackground, borderColor: colors.border }]} 
+          onPress={onPress} 
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="camera-outline" size={48} color={colors.disabled} />
+          <Text style={[styles.text, { color: colors.textSecondary }]}>{label}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -50,9 +57,7 @@ const styles = StyleSheet.create({
   },
   placeholderContainer: {
     flex: 1,
-    backgroundColor: COLORS.disabledBackground,
     borderWidth: 2,
-    borderColor: COLORS.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -60,7 +65,6 @@ const styles = StyleSheet.create({
   },
   text: {
     marginTop: SIZES.sm,
-    color: COLORS.textSecondary,
     fontSize: 14,
     fontWeight: '500',
   },
