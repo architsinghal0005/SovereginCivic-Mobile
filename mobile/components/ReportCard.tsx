@@ -46,6 +46,18 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, onPress }) => {
   const categoryColor = CATEGORY_COLORS[report.category] ?? CATEGORY_COLORS['Other'];
   const statusConfig = STATUS_CONFIG[report.status] ?? { color: '#64748B', bg: '#F1F5F9', label: report.status };
 
+  let displayDescription = report.description || 'No description provided.';
+  if (typeof report.description === 'string' && report.description.trim().startsWith('{') && report.description.trim().endsWith('}')) {
+    try {
+      const parsed = JSON.parse(report.description);
+      if ('transcript' in parsed) {
+        displayDescription = parsed.transcript?.trim() ? parsed.transcript : 'Voice report submitted (processing transcript...)';
+      }
+    } catch (e) {
+      // If parsing fails, fall back to the raw string
+    }
+  }
+
   return (
     <TouchableOpacity 
       style={styles.card} 
@@ -65,7 +77,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, onPress }) => {
 
       {/* Description */}
       <Text style={styles.description} numberOfLines={3}>
-        {report.description || 'No description provided.'}
+        {displayDescription}
       </Text>
 
       {/* Bottom row: status chip */}
