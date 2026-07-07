@@ -3,7 +3,7 @@ import { getSession } from '../repository/neo4j.js';
 import axios from 'axios';
 
 export const ingestGrievance = async (req, res) => {
-    const { citizenId, grievanceId, category, description, lat, lng, imageUrl, severity, affectedWard } = req.body;
+    const { citizenId, grievanceId, category, description, lat, lng, imageUrl, severity = 3, affectedWard = 'Unknown' } = req.body;
     const session = getSession();
 
     const cypher = `
@@ -62,8 +62,8 @@ export const ingestGrievance = async (req, res) => {
             try {
                 await axios.post(process.env.WORKFLOW_WEBHOOK_URL, {
                     clusterId: record.get("assetId") || "unlinked-cluster",
-                    clusterSize: record.get("clusterSize").toNumber(), 
-                    confidenceScore: record.get("finalScore").toNumber(),
+                    clusterSize: typeof record.get("clusterSize").toNumber === 'function' ? record.get("clusterSize").toNumber() : record.get("clusterSize"), 
+                    confidenceScore: typeof record.get("finalScore").toNumber === 'function' ? record.get("finalScore").toNumber() : record.get("finalScore"),
                     timestamp: new Date().toISOString(),
                     category: category,
                     ward: affectedWard || 'Unknown',

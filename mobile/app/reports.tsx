@@ -94,7 +94,7 @@ export default function MyReportsScreen({ onBack }: MyReportsScreenProps) {
       {/* List */}
       <FlatList
         data={reports}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => <ReportCard report={item} onPress={() => setSelectedReport(item)} />}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
