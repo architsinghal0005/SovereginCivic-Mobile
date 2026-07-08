@@ -49,7 +49,6 @@ const latitudeValue = typeof payload.latitude === 'number' && !isNaN(payload.lat
   formData.append('lng', longitudeValue.toString());
   formData.append('latitude', latitudeValue.toString());
   formData.append('longitude', longitudeValue.toString());
-formData.append('imageUrl', payload.imageUri || '');
   
   const audioFilename = payload.audioUri.split('/').pop() || 'recording.m4a';
   formData.append('audio', {

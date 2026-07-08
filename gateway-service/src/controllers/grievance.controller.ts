@@ -4,6 +4,8 @@ import { GrievanceReportRequest } from '../types/grievance.types';
 import { sarvamService } from '../services/sarvam.service';
 import { llmService } from '../services/llm.service';
 import { graphService, GraphForwardPayload } from '../services/graph.service';
+import cloudinary from "../config/cloudinary";
+import fs from "fs/promises";
 
 export const reportGrievance = async (req: Request, res: Response) => {
   try {
@@ -42,7 +44,20 @@ export const reportGrievance = async (req: Request, res: Response) => {
     // 4. Resolve the final Image URL
     // (If a physical file was uploaded, we'd normally upload to S3 here. 
     // For now, we mock the local relative path or use the provided imageUrl)
-    const finalImageUrl = imageUrl || (imageFile ? `/uploads/${imageFile.filename}` : undefined);
+    let finalImageUrl = imageUrl;
+
+if (imageFile) {
+  const uploadedImage = await cloudinary.uploader.upload(
+    imageFile.path,
+    {
+      folder: "SovereignCivic",
+    }
+  );
+
+  finalImageUrl = uploadedImage.secure_url;
+  await fs.unlink(imageFile.path).catch(() => {});
+
+}
 
     // 5. Build Graph Payload
     const graphPayload: GraphForwardPayload = {
