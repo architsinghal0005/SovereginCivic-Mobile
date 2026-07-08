@@ -1,8 +1,10 @@
 import express from "express";
+import cors from "cors";
 import { checkAuth } from "./repository/neo4j.js"; 
 import graphRoutes from "./routes/graph.routes.js";
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Initialize Database connection
