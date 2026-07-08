@@ -129,7 +129,7 @@ export const getGrievanceHistory = async (req: Request, res: Response) => {
     return res.status(200).json({ success: true, grievances: response.data.grievances || [] });
   } catch (error: any) {
     const status = error.response?.status || 500;
-    logger.error('Failed to fetch grievance history', { citizenId, error: error.message });
+    logger.error('Failed to fetch grievance history', { citizenId, graphUrl, error: error.message });
     return res.status(status).json({ success: false, error: 'Failed to fetch history from graph-service' });
   }
 };
