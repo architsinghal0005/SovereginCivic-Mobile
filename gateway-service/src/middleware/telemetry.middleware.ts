@@ -28,7 +28,7 @@ export const telemetryMiddleware = (req: Request, res: Response, next: NextFunct
     const logPayload = {
       requestId: req.id,
       method: req.method,
-      url: req.originalUrl || req.url,
+      url: req.url,
       status: res.statusCode,
       executionTimeMs,
       grievanceId,

@@ -33,7 +33,7 @@ const TIMEOUT_MS = 60000;
 export const submitGrievanceReport = async (
   payload: GrievanceReportPayload
 ): Promise<GrievanceReportResponse> => {
- const url = `${CONFIG.BACKEND_URL.replace(/\/$/, '')}/api/grievance/report`;
+ const url = `${CONFIG.BACKEND_URL}/api/grievance/report`;
 // Open mobile/api.ts and change this line:
 
 // To this (to match your gateway route):
@@ -107,7 +107,7 @@ const latitudeValue = typeof payload.latitude === 'number' && !isNaN(payload.lat
 };
 
 export const fetchMyReports = async (citizenId: string, customSignal?: AbortSignal): Promise<Grievance[]> => {
-  const url = `${CONFIG.BACKEND_URL.replace(/\/$/, '')}/api/grievance/history/${citizenId}`;
+  const url = `${CONFIG.BACKEND_URL}/api/grievance/history/${citizenId}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -148,7 +148,7 @@ export interface AppNotification {
 }
 
 export const fetchNotifications = async (citizenId: string): Promise<AppNotification[]> => {
-  const url = `${CONFIG.BACKEND_URL.replace(/\/$/, '')}/api/notifications/${citizenId}`;
+  const url = `${CONFIG.BACKEND_URL}/api/notifications/${citizenId}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
