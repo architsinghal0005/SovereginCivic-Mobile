@@ -29,7 +29,7 @@ export class GraphService {
    * 
    * @returns boolean indicating success or failure to avoid crashing the ingestion pipeline.
    */
-  public async forward(payload: GraphForwardPayload): Promise<boolean> {
+  public async forward(payload: GraphForwardPayload, requestId?: string): Promise<boolean> {
     // Ensure we construct the URL cleanly, removing any trailing slashes from env config
     const targetUrl = `${this.baseUrl.replace(/\/$/, '')}/api/graph/ingest`;
     let attempt = 0;
@@ -45,7 +45,8 @@ export class GraphService {
         await axios.post(targetUrl, payload, {
           timeout: 10000, // 10-second timeout for fast internal microservice communication
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(requestId && { 'x-request-id': requestId })
           }
         });
 

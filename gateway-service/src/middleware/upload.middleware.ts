@@ -49,7 +49,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 20 * 1024 * 1024, // 20MB overall max
+    fileSize: 5 * 1024 * 1024, // 5MB overall max
   }
 });
 
@@ -68,7 +68,7 @@ export const grievanceUploadMiddleware = (req: Request, res: Response, next: Nex
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'File too large. Max audio size is 20MB.' });
+          return res.status(400).json({ error: 'File too large. Max file size is 5MB.' });
         }
         return res.status(400).json({ error: `Upload error: ${err.message}` });
       }
@@ -82,15 +82,15 @@ export const grievanceUploadMiddleware = (req: Request, res: Response, next: Nex
     if (files && files['image'] && files['image'][0]) {
       const imageFile = files['image'][0];
       
-      // Strict 10MB limit for image files specifically
-      if (imageFile.size > 10 * 1024 * 1024) { 
+      // Strict 5MB limit for image files specifically (though already caught by global limit, this is redundant safety)
+      if (imageFile.size > 5 * 1024 * 1024) { 
         // Cleanup uploaded files since validation failed
         if (files['audio'] && files['audio'][0]) {
           fs.promises.unlink(files['audio'][0].path).catch(() => {});
         }
         fs.promises.unlink(imageFile.path).catch(() => {});
         
-        return res.status(400).json({ error: 'Image file too large. Max allowed size is 10MB.' });
+        return res.status(400).json({ error: 'Image file too large. Max allowed size is 5MB.' });
       }
     }
     

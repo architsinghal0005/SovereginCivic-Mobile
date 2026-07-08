@@ -110,7 +110,7 @@ export class StateMachineEngine {
     await NotificationGateway.sendCitizenAlert(ticket, newState, localizedMessage);
 
     // Asynchronous SLA Engine (BullMQ) Timer Management
-    if (newState === 'ASSIGNED_TO_OFFICER') {
+    if (newState === 'ASSIGNED_TO_OFFICER' && !ticket.isEscalated) {
       // Schedule a delayed BullMQ job representing an SLA countdown timer (2 hours default)
       const jobId = `sla-timer-${ticket.id}`;
       // In a real app we might read the SLA duration from env/config, hardcoded here as requested

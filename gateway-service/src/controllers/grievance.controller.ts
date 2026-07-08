@@ -13,7 +13,7 @@ export const reportGrievance = async (req: Request, res: Response) => {
     const body = req.body as GrievanceReportRequest['body'];
     const files = req.files as unknown as GrievanceReportRequest['files'];
 
-    const { citizenId, latitude, longitude, imageUrl } = body;
+    const { citizenId, latitude, longitude, imageUrl, grievanceId } = body as any;
     const audioFile = files.audio[0];
     const imageFile = files.image?.[0]; // Optional, could be undefined if imageUrl is present
 
@@ -23,10 +23,7 @@ export const reportGrievance = async (req: Request, res: Response) => {
       transcription = await sarvamService.transcribeAudio(audioFile.path);
     } catch (error) {
       logger.error('Failed to transcribe audio via Sarvam', { error: (error as Error).message });
-      return res.status(502).json({
-        success: false,
-        error: 'Failed to transcribe audio from upstream service (502 Bad Gateway)',
-      });
+      transcription = 'Voice report submitted (audio transcription failed)';
     }
 
     // 3. Call LLM Service to parse semantics
@@ -35,10 +32,7 @@ export const reportGrievance = async (req: Request, res: Response) => {
       parsedData = await llmService.parseGrievance(transcription);
     } catch (error) {
       logger.error('Failed to parse transcription via LLM', { error: (error as Error).message });
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to process the text semantics (500 Internal Server Error)',
-      });
+      parsedData = { category: 'Other', description: transcription };
     }
 
     // 4. Resolve the final Image URL
@@ -47,22 +41,28 @@ export const reportGrievance = async (req: Request, res: Response) => {
     let finalImageUrl = imageUrl;
 
 if (imageFile) {
-  const uploadedImage = await cloudinary.uploader.upload(
-    imageFile.path,
-    {
-      folder: "SovereignCivic",
-    }
-  );
+  try {
+    const uploadedImage = await cloudinary.uploader.upload(
+      imageFile.path,
+      {
+        folder: "SovereignCivic",
+      }
+    );
 
-  finalImageUrl = uploadedImage.secure_url;
-  await fs.unlink(imageFile.path).catch(() => {});
-
+    finalImageUrl = uploadedImage.secure_url;
+  } catch (error) {
+    logger.error('Failed to upload image to Cloudinary', { error: (error as Error).message });
+    return res.status(422).json({
+      success: false,
+      error: 'Failed to upload image. Please try again.'
+    });
+  }
 }
 
     // 5. Build Graph Payload
     const graphPayload: GraphForwardPayload = {
       citizenId,
-      grievanceId: `grv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      grievanceId: grievanceId || `grv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       category: parsedData.category,
       description: parsedData.description,
       timestamp: new Date().toISOString(),
@@ -72,7 +72,7 @@ if (imageFile) {
     };
 
     // 6. Forward to Graph Service
-    const forwarded = await graphService.forward(graphPayload);
+    const forwarded = await graphService.forward(graphPayload, req.headers['x-request-id'] as string || req.id);
     
     if (!forwarded) {
       // Graph failure -> 503 Service Unavailable
@@ -97,6 +97,18 @@ if (imageFile) {
       success: false,
       error: 'Unexpected Internal Server Error'
     });
+  } finally {
+    try {
+      const allFiles = req.files as any;
+      if (allFiles?.audio?.[0]?.path) {
+        await fs.unlink(allFiles.audio[0].path).catch(() => {});
+      }
+      if (allFiles?.image?.[0]?.path) {
+        await fs.unlink(allFiles.image[0].path).catch(() => {});
+      }
+    } catch (cleanupError) {
+      logger.error('Failed to clean up files in finally block', { error: (cleanupError as Error).message });
+    }
   }
 };
 
@@ -109,7 +121,10 @@ export const getGrievanceHistory = async (req: Request, res: Response) => {
   try {
     const axios = require('axios');
     const graphUrl = `${(process.env.GRAPH_SERVICE_URL || 'http://localhost:4000').replace(/\/$/, '')}/api/graph/citizen/${citizenId}/grievances`;
-    const response = await axios.get(graphUrl, { timeout: 10000 });
+    const response = await axios.get(graphUrl, { 
+      timeout: 10000,
+      headers: { 'x-request-id': req.headers['x-request-id'] || req.id }
+    });
     // Return exactly what the mobile app expects
     return res.status(200).json({ success: true, grievances: response.data.grievances || [] });
   } catch (error: any) {

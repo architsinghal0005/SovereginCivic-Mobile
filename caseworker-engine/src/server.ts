@@ -48,8 +48,12 @@ app.post('/api/workflow/trigger-caseworker', async (req: Request, res: Response)
 app.patch('/api/ticket/:id/start', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const ticket = await StateMachineEngine.transition(id, 'IN_PROGRESS');
-    res.json({ message: 'Ticket started', ticket });
+    const ticket = await repository.get(id);
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+    if (ticket.state !== 'ASSIGNED_TO_OFFICER') { res.status(400).json({ error: 'Ticket must be ASSIGNED_TO_OFFICER before it can be started' }); return; }
+    
+    const updatedTicket = await StateMachineEngine.transition(id, 'IN_PROGRESS');
+    res.json({ message: 'Ticket started', ticket: updatedTicket });
   } catch (error) {
     console.error(`Error starting ticket ${req.params.id}:`, error);
     res.status(500).json({ error: (error as Error).message });
@@ -60,8 +64,12 @@ app.patch('/api/ticket/:id/start', async (req: Request, res: Response): Promise<
 app.patch('/api/ticket/:id/resolve', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const ticket = await StateMachineEngine.transition(id, 'RESOLVED');
-    res.json({ message: 'Ticket resolved', ticket });
+    const ticket = await repository.get(id);
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+    if (ticket.state !== 'IN_PROGRESS') { res.status(400).json({ error: 'Ticket must be IN_PROGRESS before it can be resolved' }); return; }
+
+    const updatedTicket = await StateMachineEngine.transition(id, 'RESOLVED');
+    res.json({ message: 'Ticket resolved', ticket: updatedTicket });
   } catch (error) {
     console.error(`Error resolving ticket ${req.params.id}:`, error);
     res.status(500).json({ error: (error as Error).message });

@@ -6,6 +6,7 @@ import { officerRouter } from './routes/officer.routes';
 import { dashboardRouter } from './routes/dashboard.routes';
 import { logger } from './utils/logger';
 import { errorConverter, errorHandler } from './middleware/error.middleware';
+import { telemetryMiddleware } from './middleware/telemetry.middleware';
 
 const app: Express = express();
 
@@ -19,15 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// Request Logging Middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  logger.info({
-    method: req.method,
-    url: req.url,
-    ip: req.ip
-  });
-  next();
-});
+// Request Logging Middleware & Telemetry
+app.use(telemetryMiddleware);
 
 // Health Route
 app.get('/health', (req: Request, res: Response) => {

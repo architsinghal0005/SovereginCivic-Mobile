@@ -33,10 +33,15 @@ export const receiveNotification = asyncHandler(async (req: Request, res: Respon
   logger.info('Received and stored notification', { ticketId, state });
 
   if (grievanceIds && grievanceIds.length > 0 && state) {
-    const graphUrl = `${(process.env.GRAPH_SERVICE_URL || 'http://localhost:4000').replace(/\/$/, '')}/api/graph/grievances/status`;
-    axios.patch(graphUrl, { grievanceIds, status: state }).catch(err => {
-      logger.error('Failed to update graph service statuses', { error: err.message });
-    });
+    (async () => {
+      try {
+        const graphUrl = `${(process.env.GRAPH_SERVICE_URL || 'http://localhost:4000').replace(/\/$/, '')}/api/graph/grievances/status`;
+        await axios.patch(graphUrl, { grievanceIds, status: state }, { timeout: 5000 });
+      } catch (err: any) {
+        console.error(`[CRITICAL DBOARD SYNC FAILURE] Failed to sync ticket state change to Neo4j for grievances: ${grievanceIds}`);
+        logger.error('Failed to update graph service statuses', { error: err.message });
+      }
+    })();
   }
 
   res.status(201).json({ success: true, message: 'Notification stored successfully' });

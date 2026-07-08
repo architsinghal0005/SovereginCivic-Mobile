@@ -8,25 +8,24 @@ export const ingestGrievance = async (req, res) => {
 
     const cypher = `
         MERGE (c:Citizen {id: $citizenId})
-        CREATE (g:Grievance {
-            id: $grievanceId,
-            category: $category,
-            severity: toInteger($severity),
-            point: point({latitude: toFloat($lat), longitude: toFloat($lng)}),
-            createdAt: datetime(),
-            status: 'PENDING',
-            affectedWard: $affectedWard,
-            imageUrl: $imageUrl,
-            description: $description
-        })
-        CREATE (c)-[:FILED]->(g)
+        MERGE (g:Grievance {id: $grievanceId})
+        ON CREATE SET 
+            g.category = $category,
+            g.severity = toInteger($severity),
+            g.point = point({latitude: toFloat($lat), longitude: toFloat($lng)}),
+            g.createdAt = datetime(),
+            g.status = 'PENDING',
+            g.affectedWard = $affectedWard,
+            g.imageUrl = $imageUrl,
+            g.description = $description
+        MERGE (c)-[:FILED]->(g)
         
         WITH g
         // 1. Core Analytics & Proximity Clustering
         OPTIONAL MATCH (nearby:Grievance)
-        WHERE nearby.category = g.category 
+        WHERE point.distance(g.point, nearby.point) <= 500 AND nearby.id <> g.id
+          AND nearby.category = g.category 
           AND nearby.status = 'PENDING'
-          AND point.distance(g.point, nearby.point) <= 500 // 500-meter cluster radius
         
         WITH g, collect(nearby) + [g] AS cluster
         WITH g, size(cluster) AS frequency, avg(toInteger($severity)) AS avgSeverity, cluster
@@ -57,7 +56,8 @@ export const ingestGrievance = async (req, res) => {
         );
         
         const record = result.records[0];
-        if (record && record.get("clusterSize") >= 5) {
+        const clusterSize = record && typeof record.get("clusterSize").toNumber === 'function' ? record.get("clusterSize").toNumber() : record?.get("clusterSize");
+        if (record && (clusterSize === 5 || clusterSize === 10 || clusterSize === 20)) {
             console.log("⚠️ High-priority cluster detected! Triggering webhook...");
             try {
                 await axios.post(process.env.WORKFLOW_WEBHOOK_URL, {
