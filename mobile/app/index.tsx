@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, Platform, StatusBar, TouchableOpacity, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
@@ -27,6 +27,7 @@ export default function HomeScreen() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const grievanceIdRef = useRef(`grv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
   const { showToast } = useToast();
   const { status: ticketStatus } = useTicketPolling(reportId);
@@ -94,6 +95,7 @@ export default function HomeScreen() {
   const handleReset = () => {
     setSubmitSuccess(null);
     setReportId(null);
+    grievanceIdRef.current = `grv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     resetAudio();
     removePhoto();
     // GPS and permissions remain acquired for next report
@@ -114,6 +116,7 @@ export default function HomeScreen() {
         imageUri: imageUri,
         latitude: latitude,
         longitude: longitude,
+        grievanceId: grievanceIdRef.current,
       });
       
       setSubmitSuccess('Report submitted successfully! Thank you for your civic contribution.');

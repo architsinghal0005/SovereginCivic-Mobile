@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Grievance } from '../services/api';
 import { SIZES, SHADOWS } from '../constants/theme';
 import { useTheme } from '../utils/theme';
@@ -32,6 +33,7 @@ interface ReportCardProps {
 
 export const ReportCard: React.FC<ReportCardProps> = ({ report, onPress, currentCitizenId = 'dummy-citizen-123' }) => {
   const { colors, isDark } = useTheme();
+  const [imageError, setImageError] = useState(false);
   const categoryColor = CATEGORY_COLORS[report.category] ?? CATEGORY_COLORS['Other'];
   
   // Adjust status colors slightly for dark mode if needed, or keep the config
@@ -81,15 +83,20 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, onPress, current
         <Text style={[styles.description, { color: colors.text }]} numberOfLines={3}>
           {displayDescription}
         </Text>
-        {report.imageUrl && (
+        {report.imageUrl && !imageError ? (
           <Image 
             source={{ 
               uri: getFullUrl(report.imageUrl),
               headers: { 'ngrok-skip-browser-warning': 'true' }
             }} 
             style={styles.thumbnail} 
+            onError={() => setImageError(true)}
           />
-        )}
+        ) : report.imageUrl && imageError ? (
+          <View style={[styles.thumbnail, { justifyContent: 'center', alignItems: 'center' }]}>
+            <MaterialCommunityIcons name="image-broken" size={24} color="#94A3B8" />
+          </View>
+        ) : null}
       </View>
 
       {/* Bottom row: status chip */}

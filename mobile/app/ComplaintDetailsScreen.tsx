@@ -42,6 +42,7 @@ export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDeta
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const categoryColor = CATEGORY_COLORS[report.category] ?? CATEGORY_COLORS['Other'];
   const statusConfig = STATUS_CONFIG[report.status] ?? { color: '#64748B', bg: isDark ? '#334155' : '#F1F5F9', label: report.status };
@@ -157,14 +158,22 @@ export default function ComplaintDetailsScreen({ report, onBack }: ComplaintDeta
               <MaterialCommunityIcons name="image" size={20} color={colors.primary} />
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Image</Text>
             </View>
-            <Image 
-              source={{ 
-                uri: getFullUrl(report.imageUrl),
-                headers: { 'ngrok-skip-browser-warning': 'true' }
-              }} 
-              style={[styles.image, { backgroundColor: colors.border }]} 
-              resizeMode="cover" 
-            />
+            {!imageError ? (
+              <Image 
+                source={{ 
+                  uri: getFullUrl(report.imageUrl),
+                  headers: { 'ngrok-skip-browser-warning': 'true' }
+                }} 
+                style={[styles.image, { backgroundColor: colors.border }]} 
+                resizeMode="cover"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <View style={[styles.image, { backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center' }]}>
+                <MaterialCommunityIcons name="image-broken" size={48} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Image could not be loaded</Text>
+              </View>
+            )}
           </View>
         )}
 

@@ -6,6 +6,7 @@ export interface GrievanceReportPayload {
   latitude: number;
   longitude: number;
   citizenId?: string;
+  grievanceId?: string;
 }
 
 export interface GrievanceReportResponse {
@@ -40,7 +41,7 @@ export const submitGrievanceReport = async (
   const formData = new FormData();
   
   formData.append('citizenId', payload.citizenId || 'dummy-citizen-123');
-formData.append('grievanceId', 'unique-id-123'); 
+  formData.append('grievanceId', payload.grievanceId || `grv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`); 
 formData.append('category', 'General');         
 formData.append('description', 'Voice report'); 
 const latitudeValue = typeof payload.latitude === 'number' && !isNaN(payload.latitude) ? payload.latitude : 0;
