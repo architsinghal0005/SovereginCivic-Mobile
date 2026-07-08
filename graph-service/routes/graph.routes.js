@@ -8,7 +8,12 @@ import {
 import { getCitizenGrievances } from "../controllers/citizen.controller.js";
 import { updateGrievancesStatus } from "../controllers/update.controller.js";
 
+import { ingestGrievance } from "../controllers/ingest.controller.js";
+
 const router = Router();
+
+// Routes implicitly prefixed with '/api/graph' due to server.js mount
+router.post('/ingest', ingestGrievance);
 router.get('/analytics', getAnalytics);
 router.get('/heatmap', getHeatmap);
 router.get('/analytics/summary', getAnalyticsSummary);

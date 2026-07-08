@@ -1,7 +1,6 @@
 import express from "express";
 import { checkAuth } from "./repository/neo4j.js"; 
 import graphRoutes from "./routes/graph.routes.js";
-import { ingestGrievance } from "./controllers/ingest.controller.js"; 
 
 const app = express();
 app.use(express.json());
@@ -11,9 +10,6 @@ checkAuth();
 
 // Register modular routes
 app.use("/api/graph", graphRoutes);
-
-// Ingestion route (moved to its own controller)
-app.post("/api/graph/ingest", ingestGrievance);
 
 // Global Error Handler or basic listener
 app.listen(process.env.PORT || 4000, () => {
