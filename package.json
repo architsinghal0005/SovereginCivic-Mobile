@@ -1,0 +1,33 @@
+{
+  "name": "soveregincivic-mobile",
+  "version": "1.0.0",
+  "description": "The \"Intelligence Brain\" for the SovereignCivic platform, responsible for real-time grievance ingestion, spatial clustering, and automated root-cause analysis using Neo4j AuraDB.",
+  "main": "index.js",
+  "devDependencies": {
+    "axios": "^1.18.1",
+    "chalk": "^5.6.2",
+    "dotenv": "^17.4.2",
+    "neo4j-driver": "^6.2.0",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "simulate:e2e": "tsx e2e-simulation/simulation.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/architsinghal0005/SovereginCivic-Mobile.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/architsinghal0005/SovereginCivic-Mobile/issues"
+  },
+  "homepage": "https://github.com/architsinghal0005/SovereginCivic-Mobile#readme",
+  "dependencies": {
+    "form-data": "^4.0.6"
+  }
+}
