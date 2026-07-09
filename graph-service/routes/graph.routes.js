@@ -19,5 +19,6 @@ router.get('/heatmap', getHeatmap);
 router.get('/analytics/summary', getAnalyticsSummary);
 router.get('/citizen/:citizenId/grievances', getCitizenGrievances);
 router.patch('/grievances/status', updateGrievancesStatus);
+console.log("✅ graph.routes.js loaded");
 
 export default router;

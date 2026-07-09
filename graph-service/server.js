@@ -10,6 +10,15 @@ app.use(express.json());
 // Initialize Database connection
 checkAuth();
 
+console.log("SERVER STARTED");
+console.log("Mounting graph routes...");
+app.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Server is working"
+  });
+});
+
 // Register modular routes
 app.use("/api/graph", graphRoutes);
 
