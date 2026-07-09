@@ -23,6 +23,18 @@ console.log("GRAPH SERVICE BUILD v1.0.7");
 console.log("=================================");
 console.log(import.meta.url);
 
+app.get("/", (req, res) => {
+    res.send("GRAPH ROOT WORKS");
+});
+
+app.get("/test", (req, res) => {
+    console.log("TEST ROUTE HIT");
+    res.json({
+        success: true,
+        message: "Server is working"
+    });
+});
+
 // Register modular routes
 app.use("/api/graph", graphRoutes);
 
