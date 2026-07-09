@@ -18,6 +18,10 @@ app.get("/test", (req, res) => {
     message: "Server is working"
   });
 });
+console.log("=================================");
+console.log("GRAPH SERVICE BUILD v1.0.7");
+console.log("=================================");
+console.log(import.meta.url);
 
 // Register modular routes
 app.use("/api/graph", graphRoutes);
