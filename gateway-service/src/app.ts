@@ -41,4 +41,12 @@ app.use(errorConverter);
 // Apply Global Error Handler
 app.use(errorHandler);
 
+app.get("/", (req, res) => {
+  res.json({
+    service: "Gateway Service",
+    version: "v1.0.1",
+    deployedAt: new Date().toISOString()
+  });
+});
+
 export { app, logger };
