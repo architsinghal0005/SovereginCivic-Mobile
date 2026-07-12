@@ -1,18 +1,27 @@
+import 'react-native-gesture-handler';
+
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, SafeAreaView as RNSafeAreaView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from './app/index';
 import MyReportsScreen from './app/reports';
 import NotificationScreen from './app/notifications';
+import WelcomeScreen from './app/WelcomeScreen';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './hooks/useToast';
 import { ToastContainer } from './components/Toast';
 import { ThemeProvider, useTheme } from './utils/theme';
 import { SIZES, SHADOWS } from './constants/theme';
+import type { RootStackParamList } from './navigation/types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 type Tab = 'home' | 'reports' | 'notifications';
 
-function AppContent() {
+function MainAppShell() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -96,16 +105,23 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <ErrorBoundary>
-          <ToastProvider>
-            <AppContent />
-            <ToastContainer />
-          </ToastProvider>
-        </ErrorBoundary>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <ToastProvider>
+              <NavigationContainer>
+                <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Welcome">
+                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                  <Stack.Screen name="Main" component={MainAppShell} />
+                </Stack.Navigator>
+              </NavigationContainer>
+              <ToastContainer />
+            </ToastProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
