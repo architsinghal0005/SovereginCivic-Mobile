@@ -108,6 +108,7 @@ To verify the entire system architecture instantly, we have built a flagship End
 > **Running the Simulation**
 > You can execute the live demo directly from the root directory with a single command:
 > ```bash
+> npm install -D tsx
 > npm run simulate:e2e
 > ```
 
